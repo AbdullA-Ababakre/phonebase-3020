@@ -1,0 +1,28 @@
+# Security & responsibilities
+
+The actual trust boundaries of this release, with clear ownership of physical and digital access.
+
+## Trust boundaries
+
+The public website serves documentation and the console application. Customer browsers and clients connect to the assigned station gateway. The gateway authenticates the key and filters device access; the local control plane validates physical actions. The operator’s Mac and local configuration remain privileged infrastructure.
+
+> Treat a device invitation, short access code and generated MCP configuration as credentials. Current customer grants include viewing and control; browser view-only mode does not create a read-only grant. Do not publish an existing customer's device link. Use the [public demo launch plan](/docs/public-demo) for a separate isolated trial experience.
+
+## Implemented controls
+
+- HTTPS between the MCP bridge or customer client and the gateway; MCP host-to-bridge communication uses local stdio.
+- Opaque short access codes and signed legacy tokens, with server-side grant validity checks.
+- Device-specific REST and WebSocket authorization.
+- Origin checks for browser clients and Bearer authentication for remote requests.
+- Receipt isolation by access grant.
+- Hardware checks for freshness, calibration, reach, touch depth, and controller state.
+
+## Data and operations
+
+Camera frames may contain customer application data. Treat screenshots, recordings, and workflow logs according to your company’s data rules. Receipts and operational state are stored on the station. Review station backups, retention, tunnel configuration, and machine access with the operator.
+
+> No SOC 2, ISO certification, penetration-test attestation, data residency guarantee, or contractual SLA is claimed by these docs. Procurement evidence must be provided and assessed separately.
+
+## Report a concern
+
+Contact the station operator through the private channel used to provision your trial. Include a sanitized description and reproduction steps. Do not include active API keys or phone screenshots containing private data in a public issue.

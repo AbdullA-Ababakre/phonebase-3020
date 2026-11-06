@@ -1,0 +1,1417 @@
+{
+  "openapi": "3.1.2",
+  "jsonSchemaDialect": "https://json-schema.org/draft/2020-12/schema",
+  "info": {
+    "title": "PhoneUse Remote Customer API",
+    "version": "2026-07-29",
+    "description": "Authenticated customer API for assigned physical devices on a PhoneUse station. Use the gateway and Bearer key from your invitation. The public docs host is not the API host."
+  },
+  "servers": [
+    {
+      "url": "https://{stationHost}",
+      "description": "Your assigned station gateway",
+      "variables": {
+        "stationHost": {
+          "default": "gateway.phonebase.co",
+          "description": "Use the station hostname from your private invitation."
+        }
+      }
+    }
+  ],
+  "tags": [
+    {
+      "name": "Devices",
+      "description": "Assigned device discovery and readiness."
+    },
+    {
+      "name": "Observation",
+      "description": "Camera frames and observation metadata."
+    },
+    {
+      "name": "Actions",
+      "description": "Physical primitives and durable execution receipts."
+    }
+  ],
+  "externalDocs": {
+    "url": "https://phoneuse.com/docs/api-reference",
+    "description": "Remote developer documentation"
+  },
+  "paths": {
+    "/health": {
+      "get": {
+        "tags": [
+          "Devices"
+        ],
+        "summary": "Check authenticated gateway connectivity",
+        "operationId": "getHealth",
+        "responses": {
+          "200": {
+            "description": "Service and hardware-gate summary",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/RemoteError"
+          },
+          "403": {
+            "$ref": "#/components/responses/RemoteError"
+          },
+          "429": {
+            "$ref": "#/components/responses/RemoteError"
+          },
+          "502": {
+            "$ref": "#/components/responses/RemoteError"
+          },
+          "503": {
+            "$ref": "#/components/responses/RemoteError"
+          }
+        },
+        "parameters": []
+      }
+    },
+    "/api/v1/devices": {
+      "get": {
+        "tags": [
+          "Devices"
+        ],
+        "summary": "List assigned devices",
+        "operationId": "listDevices",
+        "responses": {
+          "200": {
+            "description": "Current fleet state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeviceList"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/RemoteError"
+          },
+          "403": {
+            "$ref": "#/components/responses/RemoteError"
+          },
+          "429": {
+            "$ref": "#/components/responses/RemoteError"
+          },
+          "502": {
+            "$ref": "#/components/responses/RemoteError"
+          },
+          "503": {
+            "$ref": "#/components/responses/RemoteError"
+          }
+        },
+        "parameters": []
+      }
+    },
+    "/api/v1/devices/{deviceId}": {
+      "get": {
+        "tags": [
+          "Devices"
+        ],
+        "summary": "Get one physical device",
+        "operationId": "getDevice",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/DeviceId"
+          },
+          {
+            "$ref": "#/components/parameters/RequestId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Device state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean"
+                    },
+                    "protocolVersion": {
+                      "type": "string"
+                    },
+                    "device": {
+                      "$ref": "#/components/schemas/Device"
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "protocolVersion",
+                    "device"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/RemoteError"
+          },
+          "403": {
+            "$ref": "#/components/responses/RemoteError"
+          },
+          "404": {
+            "$ref": "#/components/responses/ApiError"
+          },
+          "429": {
+            "$ref": "#/components/responses/RemoteError"
+          },
+          "502": {
+            "$ref": "#/components/responses/RemoteError"
+          },
+          "503": {
+            "$ref": "#/components/responses/RemoteError"
+          }
+        }
+      }
+    },
+    "/api/v1/devices/{deviceId}/screenshot": {
+      "get": {
+        "tags": [
+          "Observation"
+        ],
+        "summary": "Read the latest or an exact recent frame",
+        "operationId": "getScreenshot",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/DeviceId"
+          },
+          {
+            "name": "sequence",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "description": "Exact frame sequence. Omit for the latest fresh device frame."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "JPEG, PNG, or WebP frame. Use these exact headers for any coordinate action derived from this image.",
+            "headers": {
+              "X-Phonebase-Frame-Sequence": {
+                "description": "Exact frame sequence",
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "X-Phonebase-Frame-Width": {
+                "description": "Coordinate viewport width",
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "X-Phonebase-Frame-Height": {
+                "description": "Coordinate viewport height",
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "X-Phonebase-Captured-At": {
+                "description": "Capture time as Unix milliseconds",
+                "schema": {
+                  "type": "integer"
+                }
+              }
+            },
+            "content": {
+              "image/jpeg": {},
+              "image/png": {},
+              "image/webp": {}
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/RemoteError"
+          },
+          "403": {
+            "$ref": "#/components/responses/RemoteError"
+          },
+          "404": {
+            "$ref": "#/components/responses/ApiError"
+          },
+          "429": {
+            "$ref": "#/components/responses/RemoteError"
+          },
+          "502": {
+            "$ref": "#/components/responses/RemoteError"
+          },
+          "503": {
+            "$ref": "#/components/responses/ApiError"
+          }
+        }
+      }
+    },
+    "/api/v1/devices/{deviceId}/actions": {
+      "post": {
+        "tags": [
+          "Actions"
+        ],
+        "summary": "Submit one safe physical primitive",
+        "description": "Coordinate actions bind to an exact observed frame. Frames up to 15 seconds old are accepted directly; from 15 to 60 seconds the station compares the observed screen and target region with the current frame and proceeds only if they remain unchanged. Frames older than 60 seconds are rejected. Customer keys cannot perform mechanical Home. Read capabilities first and wait for the final action receipt.",
+        "operationId": "createAction",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/DeviceId"
+          },
+          {
+            "$ref": "#/components/parameters/RequestId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ActionEnvelope"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Non-motion action completed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActionResponse"
+                }
+              }
+            }
+          },
+          "202": {
+            "description": "Physical action accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/RemoteError"
+          },
+          "401": {
+            "$ref": "#/components/responses/RemoteError"
+          },
+          "403": {
+            "$ref": "#/components/responses/RemoteError"
+          },
+          "409": {
+            "description": "Safety gate, stale frame, or calibration conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RemoteError"
+          },
+          "502": {
+            "$ref": "#/components/responses/RemoteError"
+          },
+          "503": {
+            "$ref": "#/components/responses/ApiError"
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Actions"
+        ],
+        "summary": "List recent action receipts for one device",
+        "operationId": "listActionReceipts",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/DeviceId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Recent receipts, newest first",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReceiptList"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/RemoteError"
+          },
+          "403": {
+            "$ref": "#/components/responses/RemoteError"
+          },
+          "404": {
+            "$ref": "#/components/responses/ApiError"
+          },
+          "429": {
+            "$ref": "#/components/responses/RemoteError"
+          },
+          "502": {
+            "$ref": "#/components/responses/RemoteError"
+          },
+          "503": {
+            "$ref": "#/components/responses/RemoteError"
+          }
+        }
+      }
+    },
+    "/api/v1/devices/{deviceId}/visual-actions": {
+      "post": {
+        "tags": [
+          "Actions"
+        ],
+        "summary": "Locate and tap one labeled target with station-side OCR",
+        "description": "The station reads its latest fresh frame, returns to the phone Home Screen when an open_app target requires it, resolves one bounded app or text target, and submits the calibrated tap from the same fresh target frame. Prefer this endpoint over a screenshot-to-coordinate round trip for visible labels. Customer keys cannot perform mechanical Home. Read capabilities first and wait for the final action receipt.",
+        "operationId": "createVisualAction",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/DeviceId"
+          },
+          {
+            "$ref": "#/components/parameters/RequestId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VisualActionEnvelope"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Visual action was replayed from its idempotent receipt",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VisualActionResponse"
+                }
+              }
+            }
+          },
+          "202": {
+            "description": "Target was resolved and the physical tap was accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VisualActionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/RemoteError"
+          },
+          "401": {
+            "$ref": "#/components/responses/RemoteError"
+          },
+          "403": {
+            "$ref": "#/components/responses/RemoteError"
+          },
+          "409": {
+            "description": "Target missing or ambiguous, stale frame, calibration conflict, or idempotency conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RemoteError"
+          },
+          "502": {
+            "$ref": "#/components/responses/RemoteError"
+          },
+          "503": {
+            "$ref": "#/components/responses/ApiError"
+          }
+        }
+      }
+    },
+    "/api/v1/devices/{deviceId}/actions/{receiptId}": {
+      "get": {
+        "tags": [
+          "Actions"
+        ],
+        "summary": "Read final physical action state",
+        "operationId": "getActionReceipt",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/DeviceId"
+          },
+          {
+            "name": "receiptId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 160
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Receipt",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean"
+                    },
+                    "protocolVersion": {
+                      "type": "string"
+                    },
+                    "receipt": {
+                      "$ref": "#/components/schemas/Receipt"
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "protocolVersion",
+                    "receipt"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/RemoteError"
+          },
+          "403": {
+            "$ref": "#/components/responses/RemoteError"
+          },
+          "404": {
+            "$ref": "#/components/responses/ApiError"
+          },
+          "429": {
+            "$ref": "#/components/responses/RemoteError"
+          },
+          "502": {
+            "$ref": "#/components/responses/RemoteError"
+          },
+          "503": {
+            "$ref": "#/components/responses/RemoteError"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "parameters": {
+      "DeviceId": {
+        "name": "deviceId",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "example": "black-arm-01"
+      },
+      "RequestId": {
+        "name": "X-Request-Id",
+        "in": "header",
+        "required": false,
+        "description": "Customer trace identifier echoed in the response and stored with action receipts.",
+        "schema": {
+          "type": "string",
+          "maxLength": 160
+        }
+      }
+    },
+    "responses": {
+      "ApiError": {
+        "description": "PhoneUse API error",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "RemoteError": {
+        "description": "Request rejected by authentication, assignment, validation, readiness, or an upstream service.",
+        "headers": {
+          "X-Phonebase-Error-Code": {
+            "description": "Stable machine-readable error code, also present in the JSON body.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          "X-Request-Id": {
+            "description": "Trace identifier for support and observability.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/RemoteError"
+            }
+          }
+        }
+      }
+    },
+    "schemas": {
+      "Availability": {
+        "type": "object",
+        "properties": {
+          "available": {
+            "type": "boolean"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "supportedKeys": {
+            "type": "array",
+            "description": "For phone_key, the exact keys currently available on this device.",
+            "items": {
+              "enum": [
+                "back",
+                "home",
+                "enter"
+              ]
+            },
+            "uniqueItems": true
+          }
+        },
+        "required": [
+          "available"
+        ]
+      },
+      "Point": {
+        "type": "object",
+        "description": "Pixel coordinate in the full physical-screen frame, including browser chrome and system navigation areas.",
+        "properties": {
+          "x": {
+            "type": "number"
+          },
+          "y": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "x",
+          "y"
+        ],
+        "additionalProperties": false
+      },
+      "Viewport": {
+        "type": "object",
+        "description": "Exact pixel dimensions returned with the referenced screenshot; this is not a DOM viewport.",
+        "properties": {
+          "width": {
+            "type": "number",
+            "minimum": 64,
+            "maximum": 8192
+          },
+          "height": {
+            "type": "number",
+            "minimum": 64,
+            "maximum": 8192
+          }
+        },
+        "required": [
+          "width",
+          "height"
+        ],
+        "additionalProperties": false
+      },
+      "Frame": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "properties": {
+          "width": {
+            "type": "integer"
+          },
+          "height": {
+            "type": "integer"
+          },
+          "capturedAt": {
+            "type": "integer"
+          },
+          "source": {
+            "type": "string"
+          },
+          "sequence": {
+            "type": "integer"
+          },
+          "deviceId": {
+            "type": "string"
+          },
+          "rectified": {
+            "type": "boolean"
+          },
+          "calibrationId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "Capabilities": {
+        "type": "object",
+        "properties": {
+          "protocolVersion": {
+            "type": "string"
+          },
+          "observation": {
+            "type": "object",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/Availability"
+            }
+          },
+          "actions": {
+            "type": "object",
+            "properties": {
+              "status": {
+                "$ref": "#/components/schemas/Availability"
+              },
+              "hold": {
+                "$ref": "#/components/schemas/Availability"
+              },
+              "resume": {
+                "$ref": "#/components/schemas/Availability"
+              },
+              "home": {
+                "$ref": "#/components/schemas/Availability"
+              },
+              "hover_move": {
+                "$ref": "#/components/schemas/Availability"
+              },
+              "tap": {
+                "$ref": "#/components/schemas/Availability"
+              },
+              "long_press": {
+                "$ref": "#/components/schemas/Availability"
+              },
+              "swipe": {
+                "$ref": "#/components/schemas/Availability"
+              },
+              "input_text": {
+                "$ref": "#/components/schemas/Availability"
+              },
+              "phone_key": {
+                "$ref": "#/components/schemas/Availability"
+              },
+              "wait": {
+                "$ref": "#/components/schemas/Availability"
+              }
+            },
+            "required": [
+              "status",
+              "hold",
+              "resume",
+              "home",
+              "hover_move",
+              "tap",
+              "long_press",
+              "swipe",
+              "input_text",
+              "phone_key",
+              "wait"
+            ]
+          }
+        },
+        "required": [
+          "protocolVersion",
+          "observation",
+          "actions"
+        ]
+      },
+      "Device": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "running",
+              "offline"
+            ]
+          },
+          "connected": {
+            "type": "boolean"
+          },
+          "connectedAt": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "lastSeenAt": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "state": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "additionalProperties": true
+          },
+          "screen": {
+            "$ref": "#/components/schemas/Frame"
+          },
+          "capabilities": {
+            "$ref": "#/components/schemas/Capabilities"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "status",
+          "connected",
+          "screen",
+          "capabilities"
+        ]
+      },
+      "DeviceList": {
+        "type": "object",
+        "properties": {
+          "ok": {
+            "type": "boolean"
+          },
+          "protocolVersion": {
+            "type": "string"
+          },
+          "devices": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Device"
+            }
+          }
+        },
+        "required": [
+          "ok",
+          "protocolVersion",
+          "devices"
+        ]
+      },
+      "TouchContext": {
+        "type": "object",
+        "properties": {
+          "viewport": {
+            "$ref": "#/components/schemas/Viewport"
+          },
+          "frameSequence": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "touchZ": {
+            "type": "number",
+            "minimum": -20,
+            "maximum": 20,
+            "description": "Optional calibrated touch depth. The hardware driver additionally restricts this to the selected device's verified minimumTouchZ..maximumTouchZ range."
+          }
+        },
+        "required": [
+          "viewport",
+          "frameSequence"
+        ]
+      },
+      "HoverMoveAction": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/TouchContext"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "const": "hover_move"
+              },
+              "point": {
+                "$ref": "#/components/schemas/Point"
+              }
+            },
+            "required": [
+              "type",
+              "point"
+            ]
+          }
+        ]
+      },
+      "TapAction": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/TouchContext"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "const": "tap"
+              },
+              "point": {
+                "$ref": "#/components/schemas/Point"
+              },
+              "durationMs": {
+                "type": "integer",
+                "minimum": 30,
+                "maximum": 40,
+                "description": "Verified mechanical dwell for a normal tap. Use long_press for longer contact."
+              }
+            },
+            "required": [
+              "type",
+              "point"
+            ]
+          }
+        ]
+      },
+      "LongPressAction": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/TouchContext"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "const": "long_press"
+              },
+              "point": {
+                "$ref": "#/components/schemas/Point"
+              },
+              "durationMs": {
+                "type": "integer",
+                "minimum": 500,
+                "maximum": 5000
+              }
+            },
+            "required": [
+              "type",
+              "point",
+              "durationMs"
+            ]
+          }
+        ]
+      },
+      "SwipeAction": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/TouchContext"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "const": "swipe"
+              },
+              "start": {
+                "$ref": "#/components/schemas/Point"
+              },
+              "end": {
+                "$ref": "#/components/schemas/Point"
+              },
+              "durationMs": {
+                "type": "integer",
+                "minimum": 250,
+                "maximum": 3000
+              }
+            },
+            "required": [
+              "type",
+              "start",
+              "end",
+              "durationMs"
+            ]
+          }
+        ]
+      },
+      "InputTextAction": {
+        "type": "object",
+        "description": "Types a complete value without submitting. The station verifies that the standard iOS English keyboard is visible and maps the full sequence through the calibrated screen.",
+        "properties": {
+          "type": {
+            "const": "input_text"
+          },
+          "text": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "touchZ": {
+            "type": "number",
+            "minimum": -20,
+            "maximum": 20
+          }
+        },
+        "required": [
+          "type",
+          "text"
+        ],
+        "additionalProperties": false
+      },
+      "PhoneKeyAction": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "const": "phone_key"
+          },
+          "key": {
+            "enum": [
+              "back",
+              "enter",
+              "home"
+            ]
+          }
+        },
+        "required": [
+          "type",
+          "key"
+        ],
+        "additionalProperties": false
+      },
+      "Action": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/HoverMoveAction"
+          },
+          {
+            "$ref": "#/components/schemas/TapAction"
+          },
+          {
+            "$ref": "#/components/schemas/LongPressAction"
+          },
+          {
+            "$ref": "#/components/schemas/SwipeAction"
+          },
+          {
+            "$ref": "#/components/schemas/InputTextAction"
+          },
+          {
+            "$ref": "#/components/schemas/PhoneKeyAction"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "const": "hold"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "const": "resume"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "const": "status"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "const": "wait"
+              },
+              "durationMs": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 5000
+              }
+            },
+            "required": [
+              "type",
+              "durationMs"
+            ]
+          }
+        ]
+      },
+      "ActionEnvelope": {
+        "type": "object",
+        "properties": {
+          "idempotencyKey": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
+          "action": {
+            "$ref": "#/components/schemas/Action"
+          }
+        },
+        "required": [
+          "idempotencyKey",
+          "action"
+        ],
+        "additionalProperties": false
+      },
+      "VisualAction": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "const": "open_app"
+              },
+              "appName": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 80
+              }
+            },
+            "required": [
+              "type",
+              "appName"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "const": "tap_text"
+              },
+              "target": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 80
+              }
+            },
+            "required": [
+              "type",
+              "target"
+            ],
+            "additionalProperties": false
+          }
+        ]
+      },
+      "VisualActionEnvelope": {
+        "type": "object",
+        "properties": {
+          "idempotencyKey": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
+          "action": {
+            "$ref": "#/components/schemas/VisualAction"
+          }
+        },
+        "required": [
+          "idempotencyKey",
+          "action"
+        ],
+        "additionalProperties": false
+      },
+      "VisualActionResponse": {
+        "type": "object",
+        "properties": {
+          "ok": {
+            "type": "boolean"
+          },
+          "protocolVersion": {
+            "type": "string"
+          },
+          "idempotencyKey": {
+            "type": "string"
+          },
+          "result": {
+            "type": "object",
+            "properties": {
+              "status": {
+                "enum": [
+                  "accepted",
+                  "executing",
+                  "completed",
+                  "failed"
+                ]
+              },
+              "action": {
+                "$ref": "#/components/schemas/VisualAction"
+              },
+              "receipt": {
+                "$ref": "#/components/schemas/Receipt"
+              },
+              "replayed": {
+                "type": "boolean"
+              },
+              "visual": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            },
+            "required": [
+              "status",
+              "action"
+            ],
+            "additionalProperties": true
+          }
+        },
+        "required": [
+          "ok",
+          "protocolVersion",
+          "idempotencyKey",
+          "result"
+        ],
+        "additionalProperties": false
+      },
+      "Receipt": {
+        "type": "object",
+        "description": "Durable local receipt. Open receipts become failed after a control-plane restart because physical completion cannot be inferred safely.",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "deviceId": {
+            "type": "string"
+          },
+          "idempotencyKey": {
+            "type": "string"
+          },
+          "actionType": {
+            "enum": [
+              "status",
+              "hold",
+              "resume",
+              "home",
+              "hover_move",
+              "tap",
+              "long_press",
+              "swipe",
+              "input_text",
+              "phone_key",
+              "wait"
+            ]
+          },
+          "status": {
+            "enum": [
+              "accepted",
+              "executing",
+              "completed",
+              "failed"
+            ]
+          },
+          "createdAt": {
+            "type": "integer"
+          },
+          "updatedAt": {
+            "type": "integer"
+          },
+          "completedAt": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "elapsedMs": {
+            "type": "integer"
+          },
+          "actor": {
+            "type": "string"
+          },
+          "requestId": {
+            "type": "string"
+          },
+          "error": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "result": {}
+        },
+        "required": [
+          "id",
+          "deviceId",
+          "idempotencyKey",
+          "actionType",
+          "status",
+          "createdAt",
+          "updatedAt",
+          "completedAt",
+          "elapsedMs",
+          "actor",
+          "requestId",
+          "error"
+        ]
+      },
+      "ReceiptList": {
+        "type": "object",
+        "properties": {
+          "ok": {
+            "type": "boolean"
+          },
+          "protocolVersion": {
+            "type": "string"
+          },
+          "receipts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Receipt"
+            }
+          }
+        },
+        "required": [
+          "ok",
+          "protocolVersion",
+          "receipts"
+        ]
+      },
+      "ActionResult": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "enum": [
+              "accepted",
+              "executing",
+              "completed",
+              "failed"
+            ]
+          },
+          "action": {
+            "$ref": "#/components/schemas/Action"
+          },
+          "receipt": {
+            "$ref": "#/components/schemas/Receipt"
+          },
+          "replayed": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "status",
+          "action"
+        ],
+        "additionalProperties": true
+      },
+      "ActionResponse": {
+        "type": "object",
+        "properties": {
+          "ok": {
+            "type": "boolean"
+          },
+          "protocolVersion": {
+            "type": "string"
+          },
+          "idempotencyKey": {
+            "type": "string"
+          },
+          "result": {
+            "$ref": "#/components/schemas/ActionResult"
+          }
+        },
+        "required": [
+          "ok",
+          "protocolVersion",
+          "idempotencyKey",
+          "result"
+        ]
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "ok": {
+            "const": false
+          },
+          "error": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "ok",
+          "error",
+          "code"
+        ]
+      },
+      "RemoteError": {
+        "type": "object",
+        "required": [
+          "ok",
+          "error",
+          "code"
+        ],
+        "properties": {
+          "ok": {
+            "const": false
+          },
+          "error": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string",
+            "description": "Stable machine-readable error code."
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "customerKey": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Decoded customer API key. Do not use the full pb_connect_v1 access code."
+      }
+    }
+  },
+  "x-phonebase-live-websocket": {
+    "url": "wss://{stationHost}/api/live/socket?deviceId={deviceId}&access_token={customerKey}&flow=latest&window=3",
+    "protocol": "JSON metadata followed by a binary image. Send frame_ready once, then acknowledge decoded sequences with frame_ack. Redact access_token from logs."
+  },
+  "x-phonebase-security": {
+    "authentication": "Bearer customer key on every REST request. Customer assignment, validity, and origin restrictions are enforced by the gateway.",
+    "browser": "Exact allowed Origin is required when the request includes Origin. Non-browser clients may omit Origin."
+  },
+  "security": [
+    {
+      "customerKey": []
+    }
+  ]
+}

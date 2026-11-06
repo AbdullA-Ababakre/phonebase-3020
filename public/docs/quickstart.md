@@ -1,0 +1,79 @@
+# Your first connection
+
+Go from an invitation to a verified device connection, then choose how you want to build.
+
+## What you need
+
+You need a private invitation link or access code from your operator, with at least one device assigned to it. If you only received this documentation link, ask your operator for your invitation.
+
+## Open your workspace
+
+Open the private customer link. Alternatively, open the [Cloud Console](/console) and paste your access code. Short PB codes connect to the hosted PhoneUse station; existing invitation links carry their own gateway. Only assigned devices appear.
+
+> The public documentation URL does not grant access. If you only received this page, ask your operator for your private customer link.
+
+## Browser: view and control your device
+
+- Your assigned devices appear in the workspace. You start in view-only mode.
+- Choose a device and open its full-screen view to inspect the live screen.
+- When the device is ready, choose `Enable control` to allow physical touch actions. Use `Hold all` to pause motion; turning control off only stops new browser touch input.
+- If no device appears, ask your operator to check the assignment and station. If control is locked, open `Connection` to see what needs attention.
+
+Continue with the [browser control guide](/docs/console) for touch gestures and device controls.
+
+## MCP: connect an agent
+
+- Follow the download and checksum steps in the [MCP setup guide](/docs/mcp). Node.js 22.13 or later is required.
+- Run `node phonebase-mcp.mjs --configure` and paste your invitation when prompted. Setup fills the actual paths and gateway and verifies access.
+- Import the generated private configuration into your MCP host, then reconnect the host.
+- Call `phonebase_list_devices`, then use `phonebase_observe` to receive the device state, camera image, and exact frame metadata before any physical action.
+
+Follow the [complete MCP guide](/docs/mcp) for installation, configuration, and troubleshooting.
+
+## API: prepare your integration
+
+Open the [connection helper](/docs/connect) to decode your invitation locally into a gateway URL and API key. A short `PB-XXXX-XXXX-XXXX-XXXX` code is also a Bearer key for the hosted gateway. Legacy `pb_connect_v1.` codes wrap a gateway and signed key and must be decoded first. Keep the key in your application’s secret store.
+
+```bash
+export PHONEBASE_API_URL='https://your-station.example'
+# Replace the example host with the gateway from your private invitation.
+# Set PHONEBASE_API_TOKEN through your local secret manager.
+# Use a short PB code or the key decoded from a legacy invitation.
+```
+
+## API: list your assigned devices
+
+```bash
+curl --fail-with-body "$PHONEBASE_API_URL/api/v1/devices" \
+  -H "Authorization: Bearer $PHONEBASE_API_TOKEN"
+```
+
+Expect HTTP 200 and a `devices` array. Use an actual `id` from that response. An empty array means no assigned device is currently visible through this station; ask the operator to verify the allocation and hardware connection.
+
+## API: read a screenshot
+
+```bash
+export PHONEBASE_DEVICE_ID='YOUR_DEVICE_ID'
+curl --fail-with-body \
+  "$PHONEBASE_API_URL/api/v1/devices/$PHONEBASE_DEVICE_ID/screenshot" \
+  -H "Authorization: Bearer $PHONEBASE_API_TOKEN" \
+  -D frame.headers -o frame.jpg
+```
+
+Inspect `frame.jpg` and the `X-Phonebase-Frame-*` headers. These belong together. A later coordinate action must use this exact frame sequence and viewport; the station rejects stale frames.
+
+## Run a read-only example
+
+Download the [Node.js example](/examples/remote-inspect.mjs) or [Python example](/examples/remote-inspect.py). Set your gateway and key in the environment, then run the file. These examples list devices without sending physical actions.
+
+```bash
+node remote-inspect.mjs
+# or
+python3 remote-inspect.py
+```
+
+## Choose your next step
+
+- [Use the console](/docs/console) — Enable control and work directly with the live device.
+- [Build a workflow](/docs/actions) — Learn action validation, idempotency, and receipts.
+- [Connect an agent](/docs/mcp) — Configure the MCP bridge for your remote station.

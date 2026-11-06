@@ -1,0 +1,11 @@
+# Connection helper
+
+Turn a private invitation into the settings for your REST client or MCP host, entirely in this browser tab.
+
+## Prepare your connection
+
+Your current Console connection appears automatically in this tab. If you have not connected yet, paste your private access code or invitation link below. Preparing settings is local; use the Console to verify access and see live devices.
+
+## Use credentials deliberately
+
+Copy the gateway and key into your secret store or agent configuration. The helper reuses the Console connection saved in this browser tab, so signed-in customers do not enter their invitation again. A newly pasted invitation stays in helper memory until you select Continue to your workspace. Do not share generated configuration containing your key.

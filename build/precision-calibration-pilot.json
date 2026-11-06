@@ -1,0 +1,201 @@
+{
+  "createdAt": "2026-08-01T20:45:17.489Z",
+  "deviceId": "black-arm-01",
+  "mode": "pilot",
+  "screen": {
+    "width": 720,
+    "height": 1560
+  },
+  "measurements": [
+    {
+      "index": 0,
+      "target": {
+        "x": 360,
+        "y": 780
+      },
+      "machinePoint": {
+        "x": 42.215,
+        "y": 89.111
+      },
+      "actual": {
+        "x": 358.601598173516,
+        "y": 778.1164383561644
+      },
+      "error": {
+        "x": -1.3984018264840188,
+        "y": -1.8835616438356055,
+        "distance": 2.3459181857947495
+      },
+      "iphoneSample": {
+        "id": 1,
+        "x": 213.33333333333331,
+        "y": 415,
+        "normalizedX": 0.49844236760124605,
+        "normalizedY": 0.5313700384122919,
+        "viewportWidth": 428,
+        "viewportHeight": 781,
+        "pointerType": "touch",
+        "capturedAt": 1785617110950
+      },
+      "digitalMarker": {
+        "count": 876,
+        "x": 358.601598173516,
+        "y": 778.1164383561644
+      },
+      "elapsedMs": 1248
+    },
+    {
+      "index": 1,
+      "target": {
+        "x": 144,
+        "y": 390
+      },
+      "machinePoint": {
+        "x": 63.898,
+        "y": 127.508
+      },
+      "actual": {
+        "x": 143.38779956427015,
+        "y": 389.46078431372547
+      },
+      "error": {
+        "x": -0.6122004357298465,
+        "y": -0.539215686274531,
+        "distance": 0.8158081452353411
+      },
+      "iphoneSample": {
+        "id": 2,
+        "x": 84.33333333333333,
+        "y": 184.66666666666666,
+        "normalizedX": 0.1970404984423676,
+        "normalizedY": 0.2364489970123773,
+        "viewportWidth": 428,
+        "viewportHeight": 781,
+        "pointerType": "touch",
+        "capturedAt": 1785617112487
+      },
+      "digitalMarker": {
+        "count": 918,
+        "x": 143.38779956427015,
+        "y": 389.46078431372547
+      },
+      "elapsedMs": 1629
+    },
+    {
+      "index": 2,
+      "target": {
+        "x": 576,
+        "y": 390
+      },
+      "machinePoint": {
+        "x": 21.179,
+        "y": 128.025
+      },
+      "actual": {
+        "x": 576.5310907237513,
+        "y": 389.93781855249745
+      },
+      "error": {
+        "x": 0.5310907237512765,
+        "y": -0.062181447502553056,
+        "distance": 0.5347185140503061
+      },
+      "iphoneSample": {
+        "id": 3,
+        "x": 341.66666666666663,
+        "y": 184.33333333333331,
+        "normalizedX": 0.7982866043613707,
+        "normalizedY": 0.23602219376867262,
+        "viewportWidth": 428,
+        "viewportHeight": 781,
+        "pointerType": "touch",
+        "capturedAt": 1785617114223
+      },
+      "digitalMarker": {
+        "count": 981,
+        "x": 576.5310907237513,
+        "y": 389.93781855249745
+      },
+      "elapsedMs": 1651
+    },
+    {
+      "index": 3,
+      "target": {
+        "x": 576,
+        "y": 1170
+      },
+      "machinePoint": {
+        "x": 20.532,
+        "y": 50.714
+      },
+      "actual": {
+        "x": 577.1336696090794,
+        "y": 1171.9041614123582
+      },
+      "error": {
+        "x": 1.1336696090794476,
+        "y": 1.9041614123582349,
+        "distance": 2.216086069371958
+      },
+      "iphoneSample": {
+        "id": 4,
+        "x": 341,
+        "y": 648.6666666666666,
+        "normalizedX": 0.7967289719626168,
+        "normalizedY": 0.830559112249253,
+        "viewportWidth": 428,
+        "viewportHeight": 781,
+        "pointerType": "touch",
+        "capturedAt": 1785617115718
+      },
+      "digitalMarker": {
+        "count": 793,
+        "x": 577.1336696090794,
+        "y": 1171.9041614123582
+      },
+      "elapsedMs": 865
+    },
+    {
+      "index": 4,
+      "target": {
+        "x": 144,
+        "y": 1170
+      },
+      "machinePoint": {
+        "x": 63.25,
+        "y": 50.197
+      },
+      "actual": {
+        "x": 143.48981481481482,
+        "y": 1174.7481481481482
+      },
+      "error": {
+        "x": -0.5101851851851791,
+        "y": 4.748148148148175,
+        "distance": 4.775479008428932
+      },
+      "iphoneSample": {
+        "id": 5,
+        "x": 84.33333333333333,
+        "y": 649.6666666666666,
+        "normalizedX": 0.1970404984423676,
+        "normalizedY": 0.831839521980367,
+        "viewportWidth": 428,
+        "viewportHeight": 781,
+        "pointerType": "touch",
+        "capturedAt": 1785617116800
+      },
+      "digitalMarker": {
+        "count": 1080,
+        "x": 143.48981481481482,
+        "y": 1174.7481481481482
+      },
+      "elapsedMs": 1005
+    }
+  ],
+  "summary": {
+    "samples": 5,
+    "meanErrorPx": 2.1376019845762575,
+    "maximumErrorPx": 4.775479008428932
+  }
+}

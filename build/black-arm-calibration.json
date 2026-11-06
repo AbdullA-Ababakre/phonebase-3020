@@ -1,0 +1,87 @@
+{
+  "id": "black-arm-iphone-2026-08-11-physical-v1",
+  "deviceId": "black-arm-01",
+  "verified": true,
+  "verifiedAt": "2026-08-11T04:38:35+08:00",
+  "frame": {
+    "width": 720,
+    "height": 1280
+  },
+  "screen": {
+    "width": 720,
+    "height": 1560
+  },
+  "imagePoints": [
+    {
+      "x": 88,
+      "y": 35
+    },
+    {
+      "x": 620,
+      "y": 15
+    },
+    {
+      "x": 642,
+      "y": 1204
+    },
+    {
+      "x": 78,
+      "y": 1205
+    }
+  ],
+  "machinePoints": [
+    {
+      "x": 78.325,
+      "y": 155.799
+    },
+    {
+      "x": 8.623,
+      "y": 158.489
+    },
+    {
+      "x": 6.863,
+      "y": 5.705
+    },
+    {
+      "x": 79.52,
+      "y": 5.288
+    }
+  ],
+  "controlMachinePoints": [
+    {
+      "x": 78.325,
+      "y": 155.799
+    },
+    {
+      "x": 8.623,
+      "y": 158.489
+    },
+    {
+      "x": 6.863,
+      "y": 5.705
+    },
+    {
+      "x": 79.52,
+      "y": 5.288
+    }
+  ],
+  "placementCalibration": {
+    "method": "joint-camera-touch-v1",
+    "verifiedAt": "2026-08-11T04:38:35+08:00",
+    "cameraRmsePx": 2.362,
+    "cameraMaximumErrorPx": 3.233
+  },
+  "safeMachineBounds": {
+    "minimumX": 5.8,
+    "maximumX": 78.5,
+    "minimumY": 10.5,
+    "maximumY": 168.0
+  },
+  "tap": {
+    "hoverZ": 1,
+    "touchZ": 10.0,
+    "zStep": 0.5,
+    "feed": 9000,
+    "dwellMs": 80
+  }
+}

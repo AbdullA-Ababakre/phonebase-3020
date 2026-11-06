@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+Disallow: /console
+Disallow: /calibrate
+Sitemap: https://console.phonefarm.ai/sitemap.xml

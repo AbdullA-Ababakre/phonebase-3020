@@ -1,0 +1,59 @@
+---
+title: "Connect an MCP agent"
+description: "Give your agent physical device tools through a local stdio bridge to your remote station."
+---
+
+Give your agent physical device tools through a local stdio bridge to your remote station.
+
+## Understand the transport
+
+The agent host launches the PhoneUse MCP bridge as a local process. The bridge calls the authenticated remote REST gateway over HTTPS. The gateway URL is not a Streamable HTTP MCP endpoint: do not paste it into an “MCP server URL” field.
+
+## 1. Install the bridge
+
+Install Node.js 22.13 or newer on the computer running your agent host. Download the standalone [PhoneUse MCP client](https://console.phonefarm.ai/downloads/phonebase-mcp.mjs) and its [SHA-256 manifest](https://console.phonefarm.ai/downloads/phonebase-mcp.mjs.sha256). This client calls your remote station and does not install camera, driver, or local Dashboard services.
+
+```bash
+mkdir -p "$HOME/.phonebase/mcp"
+cd "$HOME/.phonebase/mcp"
+curl --fail --proto '=https' --tlsv1.2 -O \
+  https://console.phonefarm.ai/downloads/phonebase-mcp.mjs
+curl --fail --proto '=https' --tlsv1.2 -O \
+  https://console.phonefarm.ai/downloads/phonebase-mcp.mjs.sha256
+shasum -a 256 -c phonebase-mcp.mjs.sha256
+```
+
+The checksum verifies that your download matches the published artifact; it is not a separate publisher-signature system. Keep the downloaded file in a stable location and use its absolute path in the host configuration. The client uses Node.js and has no native camera or robot-driver dependency; platform-specific agent-host setup still needs to be verified in your environment.
+
+These download commands use Bash or Zsh on macOS/Linux. On Linux, if shasum is unavailable, use sha256sum -c phonebase-mcp.mjs.sha256. Stop if either download or checksum verification fails; do not run an unverified file. Windows host setup requires equivalent download, checksum, and local-process configuration steps and is not covered by these shell commands.
+
+## 2. Configure the remote connection
+
+Run the setup command below in the same terminal. Paste your private invitation or access code when prompted; input is hidden. Setup verifies your assigned-device access and writes a private configuration with the exact Node.js path, client file path, gateway, and key. No placeholder replacement is needed.
+
+```bash
+node phonebase-mcp.mjs --configure
+```
+
+Import the generated `phonebase-mcp.config.json` into an MCP host that supports local stdio servers. If the host already has other servers, merge only the `phonebase` entry under `mcpServers`; do not replace the whole configuration. Reconnect or restart the host. Keep this generated file private: it contains your access key.
+
+> Setup refuses to overwrite an existing file. To generate another configuration, run `node phonebase-mcp.mjs --configure ./phonebase-mcp-new.config.json`. If you prefer browser-generated settings, use the connection helper below, enter the full downloaded client path, and explicitly include your private key.
+
+## 3. Give the agent an operating contract
+
+```text
+Use PhoneUse to operate only my assigned devices.
+List devices and read capabilities first.
+Prefer phonebase_open_app or phonebase_tap_text for a visible labeled target; station-side OCR plans and taps from the same fresh frame.
+Before every coordinate action, obtain a fresh screenshot and use its exact frameSequence and viewport.
+Wait for a completed or failed receipt before continuing.
+Verify the outcome with a new screenshot.
+If an action is locked or fails, stop and report the reason.
+Never perform mechanical Home or claim the workspace is clear.
+```
+
+## 4. Verify tool discovery
+
+Ask the agent to call `phonebase_list_devices`, then `phonebase_observe` for a returned ID. This checks connectivity and returns the live safety state, camera image, and exact frame metadata without moving the arm. Only then begin a deliberate workflow.
+
+Customer connections discover 17 tools. Mechanical Home is omitted; it is exposed only to explicitly enabled local operator connections. See [tool reference](/mcp-tools). State-changing tools require an idempotencyKey; read-only tools such as phonebase_observe and phonebase_status do not. Supply a stable workflow step ID before submitting physical actions, and reuse it with identical arguments after a lost response. Errors include a code and HTTP status when supplied by the gateway. A failed or timed-out receipt is returned as isError; inspect the receipt before retrying.

@@ -1,0 +1,80 @@
+---
+title: "REST API reference"
+description: "The remote customer contract, generated from the checked-in OpenAPI 3.1.2 specification."
+---
+
+The remote customer contract, generated from the checked-in OpenAPI 3.1.2 specification.
+
+## Base URL & authentication
+
+Use the HTTPS gateway in your invitation, with `Authorization: Bearer YOUR_API_KEY`. Paths already include `/api/v1`; do not append another version prefix to the base URL. [Download remote OpenAPI](https://phoneuse.com/openapi-remote.json).
+
+## Endpoints
+
+### GET `/health`
+
+Check authenticated gateway connectivity
+
+
+
+Response statuses: 200, 401, 403, 429, 502, 503. See [remote OpenAPI](https://phoneuse.com/openapi-remote.json) for full request and response schemas.
+
+### GET `/api/v1/devices`
+
+List assigned devices
+
+
+
+Response statuses: 200, 401, 403, 429, 502, 503. See [remote OpenAPI](https://phoneuse.com/openapi-remote.json) for full request and response schemas.
+
+### GET `/api/v1/devices/{deviceId}`
+
+Get one physical device
+
+
+
+Response statuses: 200, 401, 403, 404, 429, 502, 503. See [remote OpenAPI](https://phoneuse.com/openapi-remote.json) for full request and response schemas.
+
+### GET `/api/v1/devices/{deviceId}/screenshot`
+
+Read the latest or an exact recent frame
+
+
+
+Response statuses: 200, 401, 403, 404, 429, 502, 503. See [remote OpenAPI](https://phoneuse.com/openapi-remote.json) for full request and response schemas.
+
+### POST `/api/v1/devices/{deviceId}/actions`
+
+Submit one safe physical primitive
+
+Coordinate actions bind to an exact observed frame. Frames up to 15 seconds old are accepted directly; from 15 to 60 seconds the station compares the observed screen and target region with the current frame and proceeds only if they remain unchanged. Frames older than 60 seconds are rejected. Customer keys cannot perform mechanical Home. Read capabilities first and wait for the final action receipt.
+
+Response statuses: 200, 202, 400, 401, 403, 409, 429, 502, 503. See [remote OpenAPI](https://phoneuse.com/openapi-remote.json) for full request and response schemas.
+
+### GET `/api/v1/devices/{deviceId}/actions`
+
+List recent action receipts for one device
+
+
+
+Response statuses: 200, 401, 403, 404, 429, 502, 503. See [remote OpenAPI](https://phoneuse.com/openapi-remote.json) for full request and response schemas.
+
+### POST `/api/v1/devices/{deviceId}/visual-actions`
+
+Locate and tap one labeled target with station-side OCR
+
+The station reads its latest fresh frame, returns to the phone Home Screen when an open_app target requires it, resolves one bounded app or text target, and submits the calibrated tap from the same fresh target frame. Prefer this endpoint over a screenshot-to-coordinate round trip for visible labels. Customer keys cannot perform mechanical Home. Read capabilities first and wait for the final action receipt.
+
+Response statuses: 200, 202, 400, 401, 403, 409, 429, 502, 503. See [remote OpenAPI](https://phoneuse.com/openapi-remote.json) for full request and response schemas.
+
+### GET `/api/v1/devices/{deviceId}/actions/{receiptId}`
+
+Read final physical action state
+
+
+
+Response statuses: 200, 401, 403, 404, 429, 502, 503. See [remote OpenAPI](https://phoneuse.com/openapi-remote.json) for full request and response schemas.
+
+## Local operator contract
+
+The [local OpenAPI specification](https://phoneuse.com/openapi.json) additionally describes operator calibration routes. These are not available through customer grants. The versioned URL identifies the API family; live responses also include a protocolVersion.

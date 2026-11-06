@@ -1,0 +1,27 @@
+# Retries & concurrency
+
+Handle uncertainty explicitly when software controls physical hardware.
+
+## Give each action one identity
+
+Set a unique `idempotencyKey` for each intended workflow step. When checking an uncertain submission, reuse the same key and exact payload rather than creating another physical action. Read the returned receipt before progressing. Do not treat this as an unlimited exactly-once guarantee across every restart or retention boundary.
+
+## Choose retries by failure type
+
+| Condition | Response |
+| --- | --- |
+| Read request timed out / temporary 5xx | Retry with bounded backoff and an overall deadline. |
+| Action submission timed out | Reconcile the existing action using its key or receipt; do not blindly send a new action. |
+| 401 / 403 | Check key, expiry, assigned devices, and browser origin. Do not loop retries. |
+| 409 | Inspect the capability or frame error; re-observe or ask the operator. |
+| 429 | Back off. Use the response if it provides retry timing; otherwise use bounded exponential backoff. |
+
+## Serialize per physical device
+
+Keep at most one workflow owner per phone. Applications sharing a customer key can otherwise interfere with each other’s screen state. Parallelize across separately assigned devices, with independent observation and receipt state for each device.
+
+> This release does not provide a distributed workflow lock, cross-station scheduler, or guaranteed reservation API. Your application must coordinate workers.
+
+## Operational limits
+
+The current remote gateway limits action submissions to 50 per 5 seconds per access principal. This is a request guard, not a promise of physical throughput. Actual throughput depends on the action, camera freshness, phone response, and network. Measure your workflow on the trial hardware.

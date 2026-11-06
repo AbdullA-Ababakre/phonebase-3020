@@ -1,0 +1,16 @@
+.panel { margin: 16px 24px 0; border: 1px solid #d9dad3; border-radius: 10px; background: rgb(255 255 252 / 90%); color: #29382e; font-size: 12px; }
+.panel summary { cursor: pointer; padding: 13px 16px; line-height: 1.6; }
+.panel summary strong { margin-right: 16px; }
+.panel summary span { color: #617166; }
+.body { padding: 0 16px 16px; }
+.body p { margin: 8px 0; line-height: 1.6; }
+.timestamp { color: #617166; font-size: 11px; }
+.notice { padding: 9px 12px; border-radius: 6px; background: #fff5dd; color: #76571a; }
+.tableScroll { overflow-x: auto; margin-top: 12px; }
+.panel table { width: 100%; border-collapse: collapse; text-align: left; white-space: nowrap; }
+.panel th, .panel td { padding: 9px 12px; border-bottom: 1px solid #e4e8e0; font-size: 11px; }
+.panel th { font-weight: 600; }
+.panel thead th { color: #617166; background: #f4f6f1; }
+.unpaired { margin-top: 14px; padding: 12px; background: #f4f6f1; border-radius: 6px; overflow-wrap: anywhere; }
+.unpaired code { font-size: 11px; }
+@media (max-width: 800px) { .panel { margin-left: 16px; margin-right: 16px; } .panel summary span { display: block; } }

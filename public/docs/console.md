@@ -1,0 +1,34 @@
+# Use the Cloud Console
+
+Observe a device, inspect its readiness, and operate it from your browser.
+
+## Connect your assigned devices
+
+Open your customer link or paste the code into [Cloud Console](/console). Use the device selector or search to find an assigned phone. If the list is empty, verify your grant with the station operator.
+
+## Check readiness before control
+
+- Open your assigned device. Your operator handles phone placement, calibration, and mechanical homing; you do not need to perform setup. Calibration is saved per device and loaded after service restarts. Moving or replacing the phone or camera, or losing the machine reference after power loss, requires operator verification before control resumes.
+- Wait for a fresh live image. An online website does not imply online hardware.
+- The console begins in view-only mode. Select Enable control when you are ready to interact.
+- Tap, long press, swipe, phone keys, and text input depend on the live capability response. Text input verifies the standard iOS English keyboard before executing the complete value as one local sequence. Follow the stated reason if an action is locked.
+
+HD mirror is the default view for a connected iPhone. Use Camera to see the physical fixture. If HD mirror is unavailable, your operator handles the USB connection, phone unlock, and trust prompt; remote customers do not need to set up the hardware.
+
+## Recover from an interruption
+
+When the stream disconnects, stop sending coordinate actions. Reconnect, inspect the next fresh frame, and re-check device capabilities. For a physical fault or calibration change, ask the operator to service the device locally. Mechanical Home is different from the phone’s Home button.
+
+## Move from manual use to code
+
+The API & MCP view exposes capabilities and connection examples for the current station. Use [API reference](/docs/api-reference) for the contract and [MCP setup](/docs/mcp) for agents. Select Disconnect in the sidebar when finished.
+
+## Choose responsiveness or detail
+
+Remote control starts in Responsive mode to reduce video bandwidth and old-frame backlog. Choose Sharp for small text or visual inspection. This changes the live preview only; API and MCP screenshots retain their original resolution. Dashboard commands reuse the authenticated live connection when available, with the same safety checks and idempotency keys as REST.
+
+Video pauses when the browser tab is hidden and reconnects when you return. Wait for a fresh image before interacting.
+
+## Station activity and incidents
+
+Local station administrators can open Activity & incidents to filter operations by customer, device, source, severity, time, request ID, or receipt. Inspect follows a request through acceptance, execution and completion. Device and stream health are monitored without requiring this page to stay open. Credentials, typed text and screen images are excluded from these diagnostic records. Client reports are marked as such; a controller completion is not proof that an arbitrary phone app accepted the intended touch.

@@ -1,0 +1,35 @@
+# Release notes
+
+Track customer-visible contract and workflow changes.
+
+## October 26, 2026: Developer onboarding and public demo guidance
+
+- MCP setup now distinguishes the local stdio bridge, station REST gateway, browser video and application-owned agent loop.
+- Added read-only API connection checks, recovery guidance, camera-fallback checks and one-workflow-owner requirements.
+- Documentation and MCP downloads are currently served from https://console.phonefarm.ai. Use the API gateway from your private invitation; older domain notes are historical deployment information.
+- Added a public demo launch plan describing current read-and-control grants and the visitor isolation, expiry, reset and abuse controls needed before anonymous trials. Those proposed controls are not enabled by publishing this guide.
+
+## September 14, 2026: PhoneUse gateway and connection setup
+
+- The hosted customer gateway is https://gateway.phonebase.co. The website and downloads remain on https://phoneuse.com.
+- Current clients migrate recognized legacy invitation URLs to the hosted gateway without changing the customer key. Existing gateway connections remain compatible.
+- The MCP --configure command verifies assigned-device access and writes a private configuration with actual executable and client paths.
+- The console defaults to HD mirror. Operators own physical setup and saved calibration.
+- Domain migration does not provide an uptime or latency guarantee; network reliability remains subject to station and client connectivity.
+
+## Enterprise evaluation update
+
+- Remote-first documentation with separate customer and station-operator paths.
+- Customer access grants can assign multiple devices on one station.
+- Remote REST and MCP clients may authenticate without a browser Origin header.
+- Renewing an expired grant cannot overlap another active customer allocation.
+- Remote OpenAPI includes Bearer authentication and excludes operator-only calibration and Home.
+- Connection helper produces REST and MCP settings from a private invitation.
+- Guides are available as Markdown and machine-readable documentation indexes.
+- Standalone Node.js MCP client download with checksum; remote customers do not need local hardware services.
+
+## Compatibility and rollout
+
+Existing single-device v1 registries and current signed customer keys remain supported. Multi-device assignments write registry version 2, which older runtimes reject rather than silently dropping device restrictions. Deploy the matching gateway and control-plane release together before creating multi-device grants.
+
+> The website and station runtime are deployed separately. These release notes describe the accompanying source update; confirm your station has been updated before using new runtime capabilities.

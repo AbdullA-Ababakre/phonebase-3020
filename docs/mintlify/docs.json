@@ -1,0 +1,74 @@
+{
+  "$schema": "https://mintlify.com/docs.json",
+  "theme": "mint",
+  "name": "PhoneUse",
+  "colors": {
+    "primary": "#087f67",
+    "light": "#20a486",
+    "dark": "#065f4e"
+  },
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get started",
+            "pages": [
+              "overview",
+              "quickstart",
+              "authentication",
+              "connect"
+            ]
+          },
+          {
+            "group": "Guides",
+            "pages": [
+              "console",
+              "actions",
+              "frames",
+              "reliability"
+            ]
+          },
+          {
+            "group": "Build with agents",
+            "pages": [
+              "mcp",
+              "mcp-tools"
+            ]
+          },
+          {
+            "group": "Reference",
+            "pages": [
+              "api-reference",
+              "errors",
+              "live-video",
+              "security",
+              "changelog"
+            ]
+          },
+          {
+            "group": "Operate a fleet",
+            "pages": [
+              "station-setup",
+              "customer-access",
+              "enterprise-evaluation"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API reference",
+        "openapi": "openapi-remote.json"
+      }
+    ]
+  },
+  "navbar": {
+    "links": [
+      {
+        "label": "Console",
+        "href": "https://phoneuse.com/console"
+      }
+    ]
+  }
+}

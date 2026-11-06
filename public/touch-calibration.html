@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no" />
+    <title>PhoneUse Touch Calibration</title>
+    <style>
+      * { box-sizing: border-box; }
+      html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; }
+      body {
+        position: relative;
+        background:
+          linear-gradient(rgb(15 23 42 / 0.10) 1px, transparent 1px),
+          linear-gradient(90deg, rgb(15 23 42 / 0.10) 1px, transparent 1px),
+          #f8fafc;
+        background-size: 10% 10%;
+        color: #0f172a;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        touch-action: none;
+        user-select: none;
+        -webkit-user-select: none;
+      }
+      header {
+        position: absolute;
+        z-index: 3;
+        top: max(14px, env(safe-area-inset-top));
+        left: 50%;
+        width: max-content;
+        max-width: calc(100% - 28px);
+        padding: 9px 14px;
+        border: 1px solid #cbd5e1;
+        border-radius: 999px;
+        background: rgb(255 255 255 / 0.92);
+        box-shadow: 0 5px 22px rgb(15 23 42 / 0.10);
+        transform: translateX(-50%);
+        text-align: center;
+        font-size: 12px;
+      }
+      header strong { margin-right: 7px; }
+      #marker {
+        position: absolute;
+        z-index: 2;
+        display: none;
+        width: 36px;
+        height: 36px;
+        border: 2px solid #dc2626;
+        border-radius: 50%;
+        transform: translate(-50%, -50%);
+        pointer-events: none;
+      }
+      #marker::before, #marker::after {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        background: #dc2626;
+        content: "";
+        transform: translate(-50%, -50%);
+      }
+      #marker::before { width: 52px; height: 1px; }
+      #marker::after { width: 1px; height: 52px; }
+      .corner {
+        position: absolute;
+        width: 18px;
+        height: 18px;
+        border-color: #2563eb;
+      }
+      .tl { top: 8px; left: 8px; border-top: 3px solid; border-left: 3px solid; }
+      .tr { top: 8px; right: 8px; border-top: 3px solid; border-right: 3px solid; }
+      .br { right: 8px; bottom: 8px; border-right: 3px solid; border-bottom: 3px solid; }
+      .bl { bottom: 8px; left: 8px; border-bottom: 3px solid; border-left: 3px solid; }
+    </style>
+  </head>
+  <body>
+    <header><strong>PhoneUse Precision Calibration</strong><span id="status">Waiting for a physical touch</span></header>
+    <div class="corner tl"></div><div class="corner tr"></div>
+    <div class="corner br"></div><div class="corner bl"></div>
+    <div id="marker"></div>
+    <script>
+      const marker = document.getElementById("marker");
+      const status = document.getElementById("status");
+      let count = 0;
+
+      async function heartbeat() {
+        try {
+          await fetch("/api/touch-calibration/heartbeat", { method: "POST" });
+        } catch (_) {
+          // Keep the visible status reserved for actual touch samples.
+        }
+      }
+
+      async function capture(event) {
+        event.preventDefault();
+        const x = event.clientX;
+        const y = event.clientY;
+        marker.style.display = "block";
+        marker.style.left = `${x}px`;
+        marker.style.top = `${y}px`;
+        status.textContent = `Recording · ${x.toFixed(1)}, ${y.toFixed(1)}`;
+        try {
+          const response = await fetch("/api/touch-calibration/samples", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              x,
+              y,
+              viewportWidth: window.innerWidth,
+              viewportHeight: window.innerHeight,
+              screenX: event.screenX,
+              screenY: event.screenY,
+              screenWidth: window.screen.width,
+              screenHeight: window.screen.height,
+              coordinateSpaceVersion: 2,
+              pointerType: event.pointerType || "touch",
+            }),
+          });
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+          count += 1;
+          status.textContent = `Recorded ${count} touch${count === 1 ? "" : "es"} · ${x.toFixed(1)}, ${y.toFixed(1)}`;
+        } catch (error) {
+          status.textContent = `Upload failed · ${String(error)}`;
+        }
+      }
+
+      window.addEventListener("pointerdown", capture, { passive: false });
+      window.addEventListener("contextmenu", (event) => event.preventDefault());
+      heartbeat();
+      setInterval(heartbeat, 800);
+    </script>
+  </body>
+</html>

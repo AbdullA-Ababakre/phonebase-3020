@@ -1,0 +1,40 @@
+---
+title: "Build on real devices."
+description: "Connect to your assigned devices, then choose your interface. Start in the browser, build with the REST API, or connect an AI agent."
+---
+
+Connect to your assigned devices, then choose your interface. Start in the browser, build with the REST API, or connect an AI agent.
+
+## What would you like to do?
+
+- [Use a device in the browser](https://phoneuse.com/console) — Have an invitation? Open your workspace and view your assigned devices. No installation required.
+- [Build with the REST API](/quickstart?path=api) — Make your first request, inspect a frame, and build your own workflow.
+- [Connect an AI agent](/mcp) — Set up the MCP bridge for your agent host and discover device tools.
+
+Setting up hardware for your customers? Follow the [station setup guide](/station-setup), then [assign customer access](/customer-access).
+
+## Your code. Real-world execution.
+
+PhoneUse makes physical devices available through a browser console, a REST API, and an MCP bridge. You observe an HD mirror or camera frame, select an action, and receive a durable receipt describing the result. Your application owns the workflow; the station owns physical execution.
+
+```text
+Your app / browser / agent
+         ↓ HTTPS + customer key
+PhoneUse station gateway
+         ↓ device access + action validation
+Control plane → camera + robot arm → real phone
+```
+
+## Choose an interface
+
+| Interface | Best for | Start here |
+| --- | --- | --- |
+| Cloud Console | Inspecting a phone and operating it manually | [Browser guide](/console) |
+| REST API | Building applications, QA workflows, and integrations | [REST quickstart](/quickstart) |
+| MCP | Connecting an agent host to physical tools | [MCP setup](/mcp) |
+
+## Understand what is available
+
+Access is provisioned by a station operator. The current runtime supports device-scoped customer keys and monthly access grants. Device capabilities are reported live; a listed action may be unavailable until the hardware is ready.
+
+> Enterprise accounts, SSO, organization roles, self-service billing, and cross-station scheduling are not part of this release. Evaluate the shipped interfaces and agree any procurement requirements with your operator.

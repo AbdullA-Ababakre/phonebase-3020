@@ -1,0 +1,36 @@
+---
+title: "WebSocket video"
+description: "A bounded camera stream for interactive clients."
+---
+
+A bounded camera stream for interactive clients.
+
+## Connection
+
+```text
+wss://gateway.phonebase.co/api/live/socket
+  ?deviceId=YOUR_DEVICE_ID
+  &flow=latest
+  &window=3
+  &access_token=YOUR_API_KEY
+```
+
+The console uses this endpoint internally. Browser Origin must be allowed by the station. Device assignment is checked before the stream opens. Query credentials are part of the current browser WebSocket protocol; redact them from client logs and tracing.
+
+## Frame delivery
+
+Each frame consists of a JSON metadata message followed by a binary image message. Match them in order. Metadata includes sequence, dimensions, capture time, media type, and device context.
+
+```json
+{"type":"frame_ready"}
+```
+
+```json
+{"type":"frame_ack","sequence":123}
+```
+
+Acknowledge the actual decoded sequence. The gateway supports a maximum of three frames in flight and retains the newest unsent frame. Without a window setting, the compatibility mode uses one-frame backpressure.
+
+## Reconnect and re-observe
+
+On close, discard partial metadata/image pairs and obsolete coordinates. Reconnect with bounded backoff, read device capabilities, then wait for a new complete frame. The station periodically revalidates live customer grants.

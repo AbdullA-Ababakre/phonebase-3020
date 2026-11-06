@@ -1,0 +1,196 @@
+# Connect an MCP agent
+
+Give your agent physical device tools through a local stdio bridge to your remote station.
+
+## Understand the transport
+
+The agent host launches the PhoneUse MCP bridge as a local process. The bridge calls the authenticated remote REST gateway over HTTPS. The gateway URL is not a Streamable HTTP MCP endpoint: do not paste it into an “MCP server URL” field.
+
+> PhoneUse supplies observation and physical action tools. Your agent host supplies the model, reasoning, task loop and notification handling. Connecting MCP alone does not create an always-on assistant or subscribe an agent to iPhone push notifications. The browser live feed is available separately in the [Console](/console).
+
+## 1. Install the bridge
+
+Install Node.js 22.13 or newer on the computer running your agent host. Download the standalone [PhoneUse MCP client](https://console.phonefarm.ai/downloads/phonebase-mcp.mjs) and its [SHA-256 manifest](https://console.phonefarm.ai/downloads/phonebase-mcp.mjs.sha256). This client calls your remote station and does not install camera, driver, or local Dashboard services.
+
+```bash
+mkdir -p "$HOME/.phonebase/mcp"
+cd "$HOME/.phonebase/mcp"
+curl --fail --proto '=https' --tlsv1.2 -O \
+  https://console.phonefarm.ai/downloads/phonebase-mcp.mjs
+curl --fail --proto '=https' --tlsv1.2 -O \
+  https://console.phonefarm.ai/downloads/phonebase-mcp.mjs.sha256
+shasum -a 256 -c phonebase-mcp.mjs.sha256
+```
+
+The checksum verifies that your download matches the published artifact; it is not a separate publisher-signature system. Keep the downloaded file in a stable location and use its absolute path in the host configuration. The client uses Node.js and has no native camera or robot-driver dependency; platform-specific agent-host setup still needs to be verified in your environment.
+
+These download commands use Bash or Zsh on macOS/Linux. On Linux, if shasum is unavailable, use sha256sum -c phonebase-mcp.mjs.sha256. Stop if either download or checksum verification fails; do not run an unverified file. Windows host setup requires equivalent download, checksum, and local-process configuration steps and is not covered by these shell commands.
+
+## 2. Configure the remote connection
+
+Run the setup command below in the same terminal. Paste your private invitation or access code when prompted; input is hidden. Setup verifies your assigned-device access and writes a private configuration with the exact Node.js path, client file path, gateway, and key. No placeholder replacement is needed.
+
+```bash
+node phonebase-mcp.mjs --configure
+```
+
+Import the generated `phonebase-mcp.config.json` into an MCP host that supports local stdio servers. If the host already has other servers, merge only the `phonebase` entry under `mcpServers`; do not replace the whole configuration. Reconnect or restart the host. Keep this generated file private: it contains your access key.
+
+> Setup refuses to overwrite an existing file. To generate another configuration, run `node phonebase-mcp.mjs --configure ./phonebase-mcp-new.config.json`. If you prefer browser-generated settings, use the connection helper below, enter the full downloaded client path, and explicitly include your private key.
+
+## 3. Give the agent an operating contract
+
+```text
+Use PhoneUse to operate only my assigned devices.
+List devices and read capabilities first.
+Prefer phonebase_open_app or phonebase_tap_text for a visible labeled target; station-side OCR plans and taps from the same fresh frame.
+For coordinate actions, inspect the actual image and use its exact frameSequence and viewport. Never assume a fixed screenshot size.
+Keep one workflow owner per phone. Submit actions serially and wait for the final receipt.
+Verify the actual phone outcome with a new observation; a completed receipt confirms execution, not application success.
+On a changed or stale frame, obtain a fresh observation and replan. Retry temporary read failures with bounded backoff.
+After an uncertain submission, inspect the existing receipt and retain the exact idempotency key and payload. Never blindly create another action.
+Respect access, calibration and synchronization locks. Report a persistent blocker and continue only independent work that remains authorized.
+Never perform mechanical Home or claim the workspace is clear.
+```
+
+## 4. Verify tool discovery
+
+Ask the agent to call `phonebase_list_devices`, then `phonebase_observe` for a returned ID. This checks connectivity and returns the live safety state, camera image, and exact frame metadata without moving the arm. Only then begin a deliberate workflow.
+
+Updated customer clients discover 18 tools, including phonebase_wait_for_screen. Restart your MCP client after updating the standalone download. Mechanical Home is omitted; it is exposed only to explicitly enabled local operator connections. See [tool reference](/docs/mcp-tools). State-changing tools require an idempotencyKey; read-only tools do not. Reuse the same key and physical arguments after a lost response. A failed receipt, timeout, or unmet expectedScreen is returned as isError; inspect the preserved receipt before retrying.
+
+## Before the first action
+
+- Confirm the returned device ID belongs to your assignment and inspect its live capabilities.
+- Open the actual image returned by phonebase_observe. Check the active source, freshness and returned dimensions; a successful request can return a physical-camera fallback when HD Mirror is disconnected.
+- Check readiness and synchronization before sending touch actions. Do not apply coordinates chosen from HD Mirror to a differently sized camera image.
+- Pause other browser, API, MCP and background workflows on that phone during your task. A hardware command lock does not reserve a whole conversation or workflow.
+- Start with a harmless, reversible action and verify the resulting screen. Leave messages, purchases and account changes for explicitly authorized workflows.
+
+## Troubleshooting
+
+| Symptom | What to check |
+| --- | --- |
+| The host asks for an MCP server URL | This integration uses local stdio. Configure the downloaded bridge as a local process; the station HTTPS address is a REST gateway. |
+| Access denied or no assigned device | Check the invitation, gateway, expiry and device assignment. Use the connection helper; never publish the code or generated configuration. |
+| An image arrives but HD Mirror is unavailable | Inspect the source and dimensions. Ask the operator to restore the assigned iPhone USB connection; do not bypass synchronization checks. |
+| The phone changes while the agent thinks | Re-observe and replan. Ensure one workflow owner controls the phone. Do not disable stale-frame or recipient checks. |
+| An action times out or the result is unclear | Read the existing receipt and inspect the current screen. Avoid a new idempotency key until the previous action is reconciled. |
+
+Share sanitized error codes, request IDs and receipt IDs with your operator. Never share live keys, private invitations or screenshots containing private messages in public support threads. See [errors](/docs/errors) and [retries and concurrency](/docs/reliability).
+
+# MCP tool reference
+
+Observation, action, and receipt tools exposed by the PhoneUse stdio server.
+
+## Observation tools
+
+| Tool | Purpose |
+| --- | --- |
+| phonebase_list_devices | List assigned devices and live capabilities. |
+| phonebase_get_device | Inspect one assigned device. |
+| phonebase_get_screenshot | Obtain the image plus its frame metadata. |
+| phonebase_observe | Obtain the image, exact frame metadata, and live device safety state together. |
+| phonebase_wait_for_screen | Read-only bounded literal-OCR check on fresh synchronized frames. Returns matched/not_matched, evidence, and an image when available; never replays motion. |
+| phonebase_status | Read the current controller state. |
+| phonebase_get_receipt | Inspect an accepted action’s durable state. |
+
+## Action tools
+
+| Tool | Operation |
+| --- | --- |
+| phonebase_open_app | Return to Home when needed, then locate an app label. With a configured station visual locator, unlabeled visible icons have a qualified visual fallback. This is not proof of installation or account readiness. |
+| phonebase_tap_text | Use station-side OCR to tap one unique visible text label without a screenshot round trip. |
+| phonebase_hover_move | Move above a point without touching. |
+| phonebase_tap | Tap a point from a fresh observation. |
+| phonebase_long_press | Press with a bounded duration. |
+| phonebase_swipe | Swipe between two points on the same frame. |
+| phonebase_input_text | Type a complete value in one call after station-side keyboard verification; never tap letters individually. |
+| phonebase_phone_key | Use a key available on the current phone. |
+| phonebase_hold | Pause physical motion. |
+| phonebase_resume | Release Hold when the controller permits it. |
+| phonebase_wait | Wait for a bounded duration. |
+
+## Completion semantics
+
+A completed receipt confirms physical execution, not the intended UI outcome. Supply expectedScreen to an action, or call phonebase_wait_for_screen afterward. Use text plus match: exact and normalized bounds around the actual input field for literal input checks; do not match a suggestion or history row. A bounded wait checks two distinct synchronized frames. An unmet check preserves the original receipt, returns isError, and sends no further motion. OCR may be uncertain or text may be clipped: inspect the actual image rather than loosening a check to force success. Matching a navigation title alone does not prove content has finished loading.
+
+## Verify before continuing
+
+Example expectedScreen for a top search field: {"text":"coding tips","match":"exact","bounds":{"left":0.21,"top":0.055,"right":0.7,"bottom":0.11},"keyboard":true,"timeoutMs":5000}. Derive bounds from your actual screenshot; these are not universal coordinates. Bounds are normalized 0–1. The standard English keyboard rows are measured before typing; layout switches include settle time, and the secondary symbol page supports = and +. Strict device key maps can further restrict characters. Account onboarding and platform access gates remain blockers, not robot successes. On arm 04, Back requires a recognized standard top-left chevron and uses its tested inset touch target; an unrecognized control is rejected rather than blindly swiped.
+
+## Operator-only Home
+
+`phonebase_home` (mechanical Home) is omitted from normal MCP tool discovery. It is available only for a local connection with `PHONEBASE_MCP_ALLOW_HOME=1`. Customer keys cannot perform mechanical Home. Phone Home (`phonebase_phone_key`) navigates the phone and remains a separate capability.
+
+# Actions & receipts
+
+Compose reliable workflows from physical primitives with explicit completion states.
+
+## The control loop
+
+```text
+Read device capabilities
+  → capture a fresh screenshot
+  → choose a point on that image
+  → submit an action with a unique idempotency key
+  → wait for completed or failed
+  → inspect a new screenshot
+```
+
+## Submit an action
+
+Send a JSON action envelope to `POST /api/v1/devices/{deviceId}/actions`. The following is a structural example. Replace the coordinates and frame metadata with values from a real, fresh observation. A normal tap permits only 30–40 ms of commanded mechanical dwell and defaults to 40 ms. Longer contact must use the explicit `long_press` action because the phone also observes mechanical contact and retraction time.
+
+```json
+{
+  "idempotencyKey": "YOUR_UNIQUE_WORKFLOW_STEP_ID",
+  "action": {
+    "type": "tap",
+    "point": {
+      "x": 360,
+      "y": 640
+    },
+    "viewport": {
+      "width": 720,
+      "height": 1280
+    },
+    "frameSequence": 123
+  }
+}
+```
+
+> A receipt marked completed confirms hardware execution, not that the phone application achieved your intended outcome. Verify the next screenshot.
+
+## Follow the receipt
+
+| State | Meaning | Client behavior |
+| --- | --- | --- |
+| accepted | The job has been accepted. | Keep the receipt ID and poll. |
+| executing | Physical execution is in progress. | Do not submit a dependent action. |
+| completed | The physical operation finished. | Observe again and verify the application state. |
+| failed | Execution did not complete successfully. | Stop and inspect the reported failure. |
+
+Read `result.receipt.id` from the submission response, then `GET /api/v1/devices/{deviceId}/actions/{receiptId}`. The polling response places the receipt at `receipt`. HTTP 202 is acceptance, not completion. Every action returns a receipt, including synchronous status and wait (HTTP 200). Retrying an identical request with the same idempotencyKey returns that receipt; changing the action under an existing key returns HTTP 409 IDEMPOTENCY_CONFLICT.
+
+## Available primitives
+
+| Action | Required context |
+| --- | --- |
+| status / hold / resume | Selected device; resume only when allowed. |
+| hover_move / tap | Point, viewport, and frameSequence. |
+| long_press | Point, viewport, frameSequence; durationMs 500–5000. |
+| swipe | Start, end, viewport, frameSequence; durationMs 250–3000. |
+| input_text | Text up to 120 characters; the standard iOS English keyboard must be visible. Send the complete value in one action. |
+| phone_key | A key reported in supportedKeys: back, home, or enter. |
+| wait | durationMs up to 5000. |
+
+Mechanical `home` is restricted to the station operator. Customer access cannot enable it by setting an MCP option.
+
+## Restarts and uncertain outcomes
+
+Receipts are persisted by the control plane. Unfinished receipts become failed when it restarts, because the software cannot infer what physical work completed during interruption. Observe the real phone before deciding how to recover.
+
+## Trace a request
+
+Send an optional X-Request-Id header (1–160 letters, digits, dots, underscores, colons, or hyphens) to correlate transport and action receipts. The gateway returns X-Request-Id. Official Dashboard and MCP clients identify their source with X-Phonebase-Client; this label is diagnostic, not an authentication credential. The authenticated rental lease remains the authority for customer attribution and device access.

@@ -1,0 +1,41 @@
+---
+title: "MCP tool reference"
+description: "Observation, action, and receipt tools exposed by the PhoneUse stdio server."
+---
+
+Observation, action, and receipt tools exposed by the PhoneUse stdio server.
+
+## Observation tools
+
+| Tool | Purpose |
+| --- | --- |
+| phonebase_list_devices | List assigned devices and live capabilities. |
+| phonebase_get_device | Inspect one assigned device. |
+| phonebase_get_screenshot | Obtain the image plus its frame metadata. |
+| phonebase_observe | Obtain the image, exact frame metadata, and live device safety state together. |
+| phonebase_status | Read the current controller state. |
+| phonebase_get_receipt | Inspect an accepted action’s durable state. |
+
+## Action tools
+
+| Tool | Operation |
+| --- | --- |
+| phonebase_open_app | Return to the phone Home Screen when needed, then use station-side OCR to locate an app label and tap it from the same fresh frame. |
+| phonebase_tap_text | Use station-side OCR to tap one unique visible text label without a screenshot round trip. |
+| phonebase_hover_move | Move above a point without touching. |
+| phonebase_tap | Tap a point from a fresh observation. |
+| phonebase_long_press | Press with a bounded duration. |
+| phonebase_swipe | Swipe between two points on the same frame. |
+| phonebase_input_text | Type a complete value in one call after station-side keyboard verification; never tap letters individually. |
+| phonebase_phone_key | Use a key available on the current phone. |
+| phonebase_hold | Pause physical motion. |
+| phonebase_resume | Release Hold when the controller permits it. |
+| phonebase_wait | Wait for a bounded duration. |
+
+## Completion semantics
+
+Action tools wait for the final hardware receipt by default. Treat tool errors as workflow boundaries. Inspect the host’s discovered input schemas for exact parameter names and constraints; do not substitute tool names or infer unsupported gestures.
+
+## Operator-only Home
+
+`phonebase_home` (mechanical Home) is omitted from normal MCP tool discovery. It is available only for a local connection with `PHONEBASE_MCP_ALLOW_HOME=1`. Customer keys cannot perform mechanical Home. Phone Home (`phonebase_phone_key`) navigates the phone and remains a separate capability.

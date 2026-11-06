@@ -1,0 +1,902 @@
+# PhoneUse documentation
+
+# Build on real devices.
+
+Connect to your assigned devices, then choose your interface. Start in the browser, build with the REST API, or connect an AI agent.
+
+## What would you like to do?
+
+- [Use a device in the browser](/console) — Have an invitation? Open your workspace and view your assigned devices. No installation required.
+- [Build with the REST API](/docs/quickstart?path=api) — Make your first request, inspect a frame, and build your own workflow.
+- [Connect an AI agent](/docs/mcp) — Set up the MCP bridge for your agent host and discover device tools.
+
+Setting up hardware for your customers? Follow the [station setup guide](/docs/station-setup), then [assign customer access](/docs/customer-access).
+
+## Your code. Real-world execution.
+
+PhoneUse makes physical devices available through a browser console, a REST API, and an MCP bridge. You observe an HD mirror or camera frame, select an action, and receive a durable receipt describing the result. Your application owns the workflow; the station owns physical execution.
+
+```text
+Your app / browser / agent
+         ↓ HTTPS + customer key
+PhoneUse station gateway
+         ↓ device access + action validation
+Control plane → camera + robot arm → real phone
+```
+
+## Choose an interface
+
+| Interface | Best for | Start here |
+| --- | --- | --- |
+| Cloud Console | Inspecting a phone and operating it manually | [Browser guide](/docs/console) |
+| REST API | Building applications, QA workflows, and integrations | [REST quickstart](/docs/quickstart) |
+| MCP | Connecting an agent host to physical tools | [MCP setup](/docs/mcp) |
+
+## Understand what is available
+
+Access is provisioned by a station operator. The current runtime supports device-scoped customer keys and monthly access grants. Device capabilities are reported live; a listed action may be unavailable until the hardware is ready.
+
+> Enterprise accounts, SSO, organization roles, self-service billing, and cross-station scheduling are not part of this release. Evaluate the shipped interfaces and agree any procurement requirements with your operator.
+
+---
+
+# Your first connection
+
+Go from an invitation to a verified device connection, then choose how you want to build.
+
+## What you need
+
+You need a private invitation link or access code from your operator, with at least one device assigned to it. If you only received this documentation link, ask your operator for your invitation.
+
+## Open your workspace
+
+Open the private customer link. Alternatively, open the [Cloud Console](/console) and paste your access code. Short PB codes connect to the hosted PhoneUse station; existing invitation links carry their own gateway. Only assigned devices appear.
+
+> The public documentation URL does not grant access. If you only received this page, ask your operator for your private customer link.
+
+## Browser: view and control your device
+
+- Your assigned devices appear in the workspace. You start in view-only mode.
+- Choose a device and open its full-screen view to inspect the live screen.
+- When the device is ready, choose `Enable control` to allow physical touch actions. Use `Hold all` to pause motion; turning control off only stops new browser touch input.
+- If no device appears, ask your operator to check the assignment and station. If control is locked, open `Connection` to see what needs attention.
+
+Continue with the [browser control guide](/docs/console) for touch gestures and device controls.
+
+## MCP: connect an agent
+
+- Follow the download and checksum steps in the [MCP setup guide](/docs/mcp). Node.js 22.13 or later is required.
+- Run `node phonebase-mcp.mjs --configure` and paste your invitation when prompted. Setup fills the actual paths and gateway and verifies access.
+- Import the generated private configuration into your MCP host, then reconnect the host.
+- Call `phonebase_list_devices`, then use `phonebase_observe` to receive the device state, camera image, and exact frame metadata before any physical action.
+
+Follow the [complete MCP guide](/docs/mcp) for installation, configuration, and troubleshooting.
+
+## API: prepare your integration
+
+Open the [connection helper](/docs/connect) to decode your invitation locally into a gateway URL and API key. A short `PB-XXXX-XXXX-XXXX-XXXX` code is also a Bearer key for the hosted gateway. Legacy `pb_connect_v1.` codes wrap a gateway and signed key and must be decoded first. Keep the key in your application’s secret store.
+
+```bash
+export PHONEBASE_API_URL='https://your-station.example'
+# Replace the example host with the gateway from your private invitation.
+# Set PHONEBASE_API_TOKEN through your local secret manager.
+# Use a short PB code or the key decoded from a legacy invitation.
+```
+
+## API: list your assigned devices
+
+```bash
+curl --fail-with-body "$PHONEBASE_API_URL/api/v1/devices" \
+  -H "Authorization: Bearer $PHONEBASE_API_TOKEN"
+```
+
+Expect HTTP 200 and a `devices` array. Use an actual `id` from that response. An empty array means no assigned device is currently visible through this station; ask the operator to verify the allocation and hardware connection.
+
+## API: read a screenshot
+
+```bash
+export PHONEBASE_DEVICE_ID='YOUR_DEVICE_ID'
+curl --fail-with-body \
+  "$PHONEBASE_API_URL/api/v1/devices/$PHONEBASE_DEVICE_ID/screenshot" \
+  -H "Authorization: Bearer $PHONEBASE_API_TOKEN" \
+  -D frame.headers -o frame.jpg
+```
+
+Inspect `frame.jpg` and the `X-Phonebase-Frame-*` headers. These belong together. A later coordinate action must use this exact frame sequence and viewport; the station rejects stale frames.
+
+## Run a read-only example
+
+Download the [Node.js example](/examples/remote-inspect.mjs) or [Python example](/examples/remote-inspect.py). Set your gateway and key in the environment, then run the file. These examples list devices without sending physical actions.
+
+```bash
+node remote-inspect.mjs
+# or
+python3 remote-inspect.py
+```
+
+## Choose your next step
+
+- [Use the console](/docs/console) — Enable control and work directly with the live device.
+- [Build a workflow](/docs/actions) — Learn action validation, idempotency, and receipts.
+- [Connect an agent](/docs/mcp) — Configure the MCP bridge for your remote station.
+
+---
+
+# Authentication & access
+
+One invitation connects the browser, REST API, and MCP to the same assigned devices.
+
+## Know your credentials
+
+| Credential | Purpose |
+| --- | --- |
+| Customer link | Opens `/console#access=…` and pairs the current tab. |
+| Access code | Short hosted codes use `PB-XXXX-XXXX-XXXX-XXXX` (16 random characters in four groups, plus the PB prefix). Legacy `pb_connect_v1.` codes still work. |
+| API key | A short PB code or decoded `pb_lease_v2.…` token, sent as a Bearer credential. |
+| Station admin token | Full station authority. For operators only; never distribute as a customer key. |
+
+## Authenticate requests
+
+```http
+Authorization: Bearer YOUR_API_KEY
+```
+
+Send the key in the `Authorization` header for REST. Browser requests must originate from an origin allowed by the station. Non-browser REST and MCP clients can omit Origin; authentication and device restrictions still apply. Cookies and account passwords are not used by this API.
+
+## Device isolation
+
+A customer grant assigns one or more devices on a single station. List, screenshot, action, receipt, and live-video requests are checked against that assignment. Customers cannot access local administration, calibration, or mechanical Home. Receipt history is scoped to the current grant.
+
+> Members sharing a key share authority and audit identity. Individual member accounts and granular read-only keys are not implemented. Use separate allocations where separate authority is required.
+
+## Expiry, renewal, and revocation
+
+- Access lasts for its configured calendar-month period. The operator can renew it.
+- Current v2 customer links remain stable across renewal and station restart.
+- Revocation or expiry rejects subsequent requests. Live connections periodically re-check the grant and close when it becomes invalid.
+- Revocation is an authorization operation, not a physical emergency stop. An accepted motion may already be executing; the station operator retains Hold and physical power control.
+- For a compromised key, revoke the grant and create a new one. Do not paste private links into tickets, public repositories, or screenshots.
+
+## Browser handling
+
+The console removes the invitation fragment after pairing and stores the connection in sessionStorage for that browser tab. Select Disconnect in the console sidebar to clear it. The invitation fragment is not sent with the HTTP request to the documentation host. Browser session restoration may restore tab data; explicitly disconnect on shared computers.
+
+---
+
+# Connection helper
+
+Turn a private invitation into the settings for your REST client or MCP host, entirely in this browser tab.
+
+## Prepare your connection
+
+Your current Console connection appears automatically in this tab. If you have not connected yet, paste your private access code or invitation link below. Preparing settings is local; use the Console to verify access and see live devices.
+
+## Use credentials deliberately
+
+Copy the gateway and key into your secret store or agent configuration. The helper reuses the Console connection saved in this browser tab, so signed-in customers do not enter their invitation again. A newly pasted invitation stays in helper memory until you select Continue to your workspace. Do not share generated configuration containing your key.
+
+---
+
+# Use the Cloud Console
+
+Observe a device, inspect its readiness, and operate it from your browser.
+
+## Connect your assigned devices
+
+Open your customer link or paste the code into [Cloud Console](/console). Use the device selector or search to find an assigned phone. If the list is empty, verify your grant with the station operator.
+
+## Check readiness before control
+
+- Open your assigned device. Your operator handles phone placement, calibration, and mechanical homing; you do not need to perform setup. Calibration is saved per device and loaded after service restarts. Moving or replacing the phone or camera, or losing the machine reference after power loss, requires operator verification before control resumes.
+- Wait for a fresh live image. An online website does not imply online hardware.
+- The console begins in view-only mode. Select Enable control when you are ready to interact.
+- Tap, long press, swipe, phone keys, and text input depend on the live capability response. Text input verifies the standard iOS English keyboard before executing the complete value as one local sequence. Follow the stated reason if an action is locked.
+
+HD mirror is the default view for a connected iPhone. Use Camera to see the physical fixture. If HD mirror is unavailable, your operator handles the USB connection, phone unlock, and trust prompt; remote customers do not need to set up the hardware.
+
+## Recover from an interruption
+
+When the stream disconnects, stop sending coordinate actions. Reconnect, inspect the next fresh frame, and re-check device capabilities. For a physical fault or calibration change, ask the operator to service the device locally. Mechanical Home is different from the phone’s Home button.
+
+## Move from manual use to code
+
+The API & MCP view exposes capabilities and connection examples for the current station. Use [API reference](/docs/api-reference) for the contract and [MCP setup](/docs/mcp) for agents. Select Disconnect in the sidebar when finished.
+
+## Choose responsiveness or detail
+
+Remote control starts in Responsive mode to reduce video bandwidth and old-frame backlog. Choose Sharp for small text or visual inspection. This changes the live preview only; API and MCP screenshots retain their original resolution. Dashboard commands reuse the authenticated live connection when available, with the same safety checks and idempotency keys as REST.
+
+Video pauses when the browser tab is hidden and reconnects when you return. Wait for a fresh image before interacting.
+
+## Station activity and incidents
+
+Local station administrators can open Activity & incidents to filter operations by customer, device, source, severity, time, request ID, or receipt. Inspect follows a request through acceptance, execution and completion. Device and stream health are monitored without requiring this page to stay open. Credentials, typed text and screen images are excluded from these diagnostic records. Client reports are marked as such; a controller completion is not proof that an arbitrary phone app accepted the intended touch.
+
+---
+
+# Actions & receipts
+
+Compose reliable workflows from physical primitives with explicit completion states.
+
+## The control loop
+
+```text
+Read device capabilities
+  → capture a fresh screenshot
+  → choose a point on that image
+  → submit an action with a unique idempotency key
+  → wait for completed or failed
+  → inspect a new screenshot
+```
+
+## Submit an action
+
+Send a JSON action envelope to `POST /api/v1/devices/{deviceId}/actions`. The following is a structural example. Replace the coordinates and frame metadata with values from a real, fresh observation. A normal tap permits only 30–40 ms of commanded mechanical dwell and defaults to 40 ms. Longer contact must use the explicit `long_press` action because the phone also observes mechanical contact and retraction time.
+
+```json
+{
+  "idempotencyKey": "YOUR_UNIQUE_WORKFLOW_STEP_ID",
+  "action": {
+    "type": "tap",
+    "point": {
+      "x": 360,
+      "y": 640
+    },
+    "viewport": {
+      "width": 720,
+      "height": 1280
+    },
+    "frameSequence": 123
+  }
+}
+```
+
+> A receipt marked completed confirms hardware execution, not that the phone application achieved your intended outcome. Verify the next screenshot.
+
+## Follow the receipt
+
+| State | Meaning | Client behavior |
+| --- | --- | --- |
+| accepted | The job has been accepted. | Keep the receipt ID and poll. |
+| executing | Physical execution is in progress. | Do not submit a dependent action. |
+| completed | The physical operation finished. | Observe again and verify the application state. |
+| failed | Execution did not complete successfully. | Stop and inspect the reported failure. |
+
+Read `result.receipt.id` from the submission response, then `GET /api/v1/devices/{deviceId}/actions/{receiptId}`. The polling response places the receipt at `receipt`. HTTP 202 is acceptance, not completion. Every action returns a receipt, including synchronous status and wait (HTTP 200). Retrying an identical request with the same idempotencyKey returns that receipt; changing the action under an existing key returns HTTP 409 IDEMPOTENCY_CONFLICT.
+
+## Available primitives
+
+| Action | Required context |
+| --- | --- |
+| status / hold / resume | Selected device; resume only when allowed. |
+| hover_move / tap | Point, viewport, and frameSequence. |
+| long_press | Point, viewport, frameSequence; durationMs 500–5000. |
+| swipe | Start, end, viewport, frameSequence; durationMs 250–3000. |
+| input_text | Text up to 120 characters; the standard iOS English keyboard must be visible. Send the complete value in one action. |
+| phone_key | A key reported in supportedKeys: back, home, or enter. |
+| wait | durationMs up to 5000. |
+
+Mechanical `home` is restricted to the station operator. Customer access cannot enable it by setting an MCP option.
+
+## Restarts and uncertain outcomes
+
+Receipts are persisted by the control plane. Unfinished receipts become failed when it restarts, because the software cannot infer what physical work completed during interruption. Observe the real phone before deciding how to recover.
+
+## Trace a request
+
+Send an optional X-Request-Id header (1–160 letters, digits, dots, underscores, colons, or hyphens) to correlate transport and action receipts. The gateway returns X-Request-Id. Official Dashboard and MCP clients identify their source with X-Phonebase-Client; this label is diagnostic, not an authentication credential. The authenticated rental lease remains the authority for customer attribution and device access.
+
+---
+
+# Frames & coordinates
+
+A point is meaningful only in the exact image used to choose it.
+
+## Read image metadata
+
+| Header | Meaning |
+| --- | --- |
+| X-Phonebase-Frame-Sequence | Exact sequence identifier for this observation. |
+| X-Phonebase-Frame-Width | Viewport width used for action coordinates. |
+| X-Phonebase-Frame-Height | Viewport height used for action coordinates. |
+| X-Phonebase-Captured-At | Capture timestamp in Unix milliseconds. |
+
+## Keep the coordinate system intact
+
+The origin is at the top-left. X increases to the right and Y increases downwards. Use the returned image dimensions, not browser CSS dimensions. If your vision pipeline resizes or crops the image, correctly map its result back to the original observation before submitting.
+
+> Never reuse an old sequence with a new image or clamp an out-of-range coordinate. Get a fresh screenshot after each completed action.
+
+## Freshness and exact frames
+
+Omit `sequence` to request a fresh current screenshot. An optional `?sequence=…` requests a retained exact observation; unavailable or stale observations are rejected. Frame history and freshness windows are bounded by station configuration, so long processing delays require a new observation.
+
+Coordinate actions use two freshness tiers. Frames up to 15 seconds old are accepted directly. From 15 to 60 seconds, the station compares the observed image and intended target region with the current screen; it proceeds only when both remain unchanged. FRAME_CHANGED or FRAME_REVALIDATION_REQUIRED means you must obtain a new observation. Frames older than 60 seconds return STALE_FRAME.
+
+## Live video
+
+The console uses an authenticated WebSocket stream and bounded frame backpressure. For application integrations, start with REST screenshots unless continuous video is necessary. See [WebSocket reference](/docs/live-video).
+
+---
+
+# Retries & concurrency
+
+Handle uncertainty explicitly when software controls physical hardware.
+
+## Give each action one identity
+
+Set a unique `idempotencyKey` for each intended workflow step. When checking an uncertain submission, reuse the same key and exact payload rather than creating another physical action. Read the returned receipt before progressing. Do not treat this as an unlimited exactly-once guarantee across every restart or retention boundary.
+
+## Choose retries by failure type
+
+| Condition | Response |
+| --- | --- |
+| Read request timed out / temporary 5xx | Retry with bounded backoff and an overall deadline. |
+| Action submission timed out | Reconcile the existing action using its key or receipt; do not blindly send a new action. |
+| 401 / 403 | Check key, expiry, assigned devices, and browser origin. Do not loop retries. |
+| 409 | Inspect the capability or frame error; re-observe or ask the operator. |
+| 429 | Back off. Use the response if it provides retry timing; otherwise use bounded exponential backoff. |
+
+## Serialize per physical device
+
+Keep at most one workflow owner per phone. Applications sharing a customer key can otherwise interfere with each other’s screen state. Parallelize across separately assigned devices, with independent observation and receipt state for each device.
+
+> This release does not provide a distributed workflow lock, cross-station scheduler, or guaranteed reservation API. Your application must coordinate workers.
+
+## Operational limits
+
+The current remote gateway limits action submissions to 50 per 5 seconds per access principal. This is a request guard, not a promise of physical throughput. Actual throughput depends on the action, camera freshness, phone response, and network. Measure your workflow on the trial hardware.
+
+---
+
+# Connect an MCP agent
+
+Give your agent physical device tools through a local stdio bridge to your remote station.
+
+## Understand the transport
+
+The agent host launches the PhoneUse MCP bridge as a local process. The bridge calls the authenticated remote REST gateway over HTTPS. The gateway URL is not a Streamable HTTP MCP endpoint: do not paste it into an “MCP server URL” field.
+
+> PhoneUse supplies observation and physical action tools. Your agent host supplies the model, reasoning, task loop and notification handling. Connecting MCP alone does not create an always-on assistant or subscribe an agent to iPhone push notifications. The browser live feed is available separately in the [Console](/console).
+
+## 1. Install the bridge
+
+Install Node.js 22.13 or newer on the computer running your agent host. Download the standalone [PhoneUse MCP client](https://console.phonefarm.ai/downloads/phonebase-mcp.mjs) and its [SHA-256 manifest](https://console.phonefarm.ai/downloads/phonebase-mcp.mjs.sha256). This client calls your remote station and does not install camera, driver, or local Dashboard services.
+
+```bash
+mkdir -p "$HOME/.phonebase/mcp"
+cd "$HOME/.phonebase/mcp"
+curl --fail --proto '=https' --tlsv1.2 -O \
+  https://console.phonefarm.ai/downloads/phonebase-mcp.mjs
+curl --fail --proto '=https' --tlsv1.2 -O \
+  https://console.phonefarm.ai/downloads/phonebase-mcp.mjs.sha256
+shasum -a 256 -c phonebase-mcp.mjs.sha256
+```
+
+The checksum verifies that your download matches the published artifact; it is not a separate publisher-signature system. Keep the downloaded file in a stable location and use its absolute path in the host configuration. The client uses Node.js and has no native camera or robot-driver dependency; platform-specific agent-host setup still needs to be verified in your environment.
+
+These download commands use Bash or Zsh on macOS/Linux. On Linux, if shasum is unavailable, use sha256sum -c phonebase-mcp.mjs.sha256. Stop if either download or checksum verification fails; do not run an unverified file. Windows host setup requires equivalent download, checksum, and local-process configuration steps and is not covered by these shell commands.
+
+## 2. Configure the remote connection
+
+Run the setup command below in the same terminal. Paste your private invitation or access code when prompted; input is hidden. Setup verifies your assigned-device access and writes a private configuration with the exact Node.js path, client file path, gateway, and key. No placeholder replacement is needed.
+
+```bash
+node phonebase-mcp.mjs --configure
+```
+
+Import the generated `phonebase-mcp.config.json` into an MCP host that supports local stdio servers. If the host already has other servers, merge only the `phonebase` entry under `mcpServers`; do not replace the whole configuration. Reconnect or restart the host. Keep this generated file private: it contains your access key.
+
+> Setup refuses to overwrite an existing file. To generate another configuration, run `node phonebase-mcp.mjs --configure ./phonebase-mcp-new.config.json`. If you prefer browser-generated settings, use the connection helper below, enter the full downloaded client path, and explicitly include your private key.
+
+## 3. Give the agent an operating contract
+
+```text
+Use PhoneUse to operate only my assigned devices.
+List devices and read capabilities first.
+Prefer phonebase_open_app or phonebase_tap_text for a visible labeled target; station-side OCR plans and taps from the same fresh frame.
+For coordinate actions, inspect the actual image and use its exact frameSequence and viewport. Never assume a fixed screenshot size.
+Keep one workflow owner per phone. Submit actions serially and wait for the final receipt.
+Verify the actual phone outcome with a new observation; a completed receipt confirms execution, not application success.
+On a changed or stale frame, obtain a fresh observation and replan. Retry temporary read failures with bounded backoff.
+After an uncertain submission, inspect the existing receipt and retain the exact idempotency key and payload. Never blindly create another action.
+Respect access, calibration and synchronization locks. Report a persistent blocker and continue only independent work that remains authorized.
+Never perform mechanical Home or claim the workspace is clear.
+```
+
+## 4. Verify tool discovery
+
+Ask the agent to call `phonebase_list_devices`, then `phonebase_observe` for a returned ID. This checks connectivity and returns the live safety state, camera image, and exact frame metadata without moving the arm. Only then begin a deliberate workflow.
+
+Updated customer clients discover 18 tools, including phonebase_wait_for_screen. Restart your MCP client after updating the standalone download. Mechanical Home is omitted; it is exposed only to explicitly enabled local operator connections. See [tool reference](/docs/mcp-tools). State-changing tools require an idempotencyKey; read-only tools do not. Reuse the same key and physical arguments after a lost response. A failed receipt, timeout, or unmet expectedScreen is returned as isError; inspect the preserved receipt before retrying.
+
+## Before the first action
+
+- Confirm the returned device ID belongs to your assignment and inspect its live capabilities.
+- Open the actual image returned by phonebase_observe. Check the active source, freshness and returned dimensions; a successful request can return a physical-camera fallback when HD Mirror is disconnected.
+- Check readiness and synchronization before sending touch actions. Do not apply coordinates chosen from HD Mirror to a differently sized camera image.
+- Pause other browser, API, MCP and background workflows on that phone during your task. A hardware command lock does not reserve a whole conversation or workflow.
+- Start with a harmless, reversible action and verify the resulting screen. Leave messages, purchases and account changes for explicitly authorized workflows.
+
+## Troubleshooting
+
+| Symptom | What to check |
+| --- | --- |
+| The host asks for an MCP server URL | This integration uses local stdio. Configure the downloaded bridge as a local process; the station HTTPS address is a REST gateway. |
+| Access denied or no assigned device | Check the invitation, gateway, expiry and device assignment. Use the connection helper; never publish the code or generated configuration. |
+| An image arrives but HD Mirror is unavailable | Inspect the source and dimensions. Ask the operator to restore the assigned iPhone USB connection; do not bypass synchronization checks. |
+| The phone changes while the agent thinks | Re-observe and replan. Ensure one workflow owner controls the phone. Do not disable stale-frame or recipient checks. |
+| An action times out or the result is unclear | Read the existing receipt and inspect the current screen. Avoid a new idempotency key until the previous action is reconciled. |
+
+Share sanitized error codes, request IDs and receipt IDs with your operator. Never share live keys, private invitations or screenshots containing private messages in public support threads. See [errors](/docs/errors) and [retries and concurrency](/docs/reliability).
+
+---
+
+# MCP tool reference
+
+Observation, action, and receipt tools exposed by the PhoneUse stdio server.
+
+## Observation tools
+
+| Tool | Purpose |
+| --- | --- |
+| phonebase_list_devices | List assigned devices and live capabilities. |
+| phonebase_get_device | Inspect one assigned device. |
+| phonebase_get_screenshot | Obtain the image plus its frame metadata. |
+| phonebase_observe | Obtain the image, exact frame metadata, and live device safety state together. |
+| phonebase_wait_for_screen | Read-only bounded literal-OCR check on fresh synchronized frames. Returns matched/not_matched, evidence, and an image when available; never replays motion. |
+| phonebase_status | Read the current controller state. |
+| phonebase_get_receipt | Inspect an accepted action’s durable state. |
+
+## Action tools
+
+| Tool | Operation |
+| --- | --- |
+| phonebase_open_app | Return to Home when needed, then locate an app label. With a configured station visual locator, unlabeled visible icons have a qualified visual fallback. This is not proof of installation or account readiness. |
+| phonebase_tap_text | Use station-side OCR to tap one unique visible text label without a screenshot round trip. |
+| phonebase_hover_move | Move above a point without touching. |
+| phonebase_tap | Tap a point from a fresh observation. |
+| phonebase_long_press | Press with a bounded duration. |
+| phonebase_swipe | Swipe between two points on the same frame. |
+| phonebase_input_text | Type a complete value in one call after station-side keyboard verification; never tap letters individually. |
+| phonebase_phone_key | Use a key available on the current phone. |
+| phonebase_hold | Pause physical motion. |
+| phonebase_resume | Release Hold when the controller permits it. |
+| phonebase_wait | Wait for a bounded duration. |
+
+## Completion semantics
+
+A completed receipt confirms physical execution, not the intended UI outcome. Supply expectedScreen to an action, or call phonebase_wait_for_screen afterward. Use text plus match: exact and normalized bounds around the actual input field for literal input checks; do not match a suggestion or history row. A bounded wait checks two distinct synchronized frames. An unmet check preserves the original receipt, returns isError, and sends no further motion. OCR may be uncertain or text may be clipped: inspect the actual image rather than loosening a check to force success. Matching a navigation title alone does not prove content has finished loading.
+
+## Verify before continuing
+
+Example expectedScreen for a top search field: {"text":"coding tips","match":"exact","bounds":{"left":0.21,"top":0.055,"right":0.7,"bottom":0.11},"keyboard":true,"timeoutMs":5000}. Derive bounds from your actual screenshot; these are not universal coordinates. Bounds are normalized 0–1. The standard English keyboard rows are measured before typing; layout switches include settle time, and the secondary symbol page supports = and +. Strict device key maps can further restrict characters. Account onboarding and platform access gates remain blockers, not robot successes. On arm 04, Back requires a recognized standard top-left chevron and uses its tested inset touch target; an unrecognized control is rejected rather than blindly swiped.
+
+## Operator-only Home
+
+`phonebase_home` (mechanical Home) is omitted from normal MCP tool discovery. It is available only for a local connection with `PHONEBASE_MCP_ALLOW_HOME=1`. Customer keys cannot perform mechanical Home. Phone Home (`phonebase_phone_key`) navigates the phone and remains a separate capability.
+
+---
+
+# REST API reference
+
+The remote customer contract, generated from the checked-in OpenAPI 3.1.2 specification.
+
+## Base URL & authentication
+
+Use the HTTPS gateway in your invitation, with `Authorization: Bearer YOUR_API_KEY`. Paths already include `/api/v1`; do not append another version prefix to the base URL. [Download remote OpenAPI](/openapi-remote.json).
+
+A short `PB-XXXX-XXXX-XXXX-XXXX` code can be used as a Bearer key for its hosted gateway. A full `pb_connect_v1.` invitation wraps a gateway and key; decode it with the [connection helper](/docs/connect) first. The docs host is not necessarily your assigned API host. Every request, including `/health`, requires authentication.
+
+> A customer key is a credential for the assigned phone, not a public demo URL. Current customer grants include both read and control access. Browser view-only mode is a user-interface setting, not a read-only API permission. See [public demo planning](/docs/public-demo) before putting a device link on a public website.
+
+## Read-only connection check
+
+Set `PHONEBASE_API_URL` to your assigned HTTPS gateway and provide `PHONEBASE_API_TOKEN` through your local secret manager. These requests do not move the arm. HTTP 200 verifies authenticated connectivity; inspect live device state separately before claiming that control is ready.
+
+```bash
+curl --fail-with-body "$PHONEBASE_API_URL/health" \
+  -H "Authorization: Bearer $PHONEBASE_API_TOKEN"
+curl --fail-with-body "$PHONEBASE_API_URL/api/v1/devices" \
+  -H "Authorization: Bearer $PHONEBASE_API_TOKEN"
+```
+
+Choose an actual device ID from `devices`, read its state and capabilities, then download a screenshot with its metadata headers. Follow the [REST quickstart](/docs/quickstart) for the complete example. Camera fallback, an offline phone, or a locked action must be resolved before your workflow continues.
+
+## Execution and recovery contract
+
+- Keep one workflow owner per phone across browser, REST and MCP clients. Primitive commands are serialized, but there is no guaranteed public visitor reservation or workflow-isolation API.
+- Use a unique idempotencyKey for each intended step. After a lost response, inspect its receipt and retain the same key and exact payload; do not create a duplicate action.
+- HTTP 202 or an accepted receipt is not completion. Read the receipt until it reaches a final state, then inspect a fresh screenshot for the application result.
+- Receipts label completionScope as physical_execution and uiVerification separately. GET /api/v1/devices/{deviceId}/screen-state supplies bounded OCR postcondition checks without sending an action. Read verification.matched, scope and evidence; a 200 response alone does not mean the condition matched.
+- Coordinate actions must use the exact screenshot frameSequence and viewport. Prefer station-side visual actions for visible text or app names when appropriate.
+- A shared key shares an access identity and its action rate budget. The current 50 submissions per 5 seconds limit is an abuse guard, not guaranteed physical throughput or a fair-use queue.
+
+For 401/403, fix access or assignment. For 409, inspect the returned code, readiness and current frame. For 429, back off. For temporary 5xx read errors, retry with a bounded deadline. An uncertain write requires receipt reconciliation first. See [errors](/docs/errors), [frames](/docs/frames) and [reliability](/docs/reliability).
+
+## Endpoints
+
+### GET `/api/v1/devices/{deviceId}/screen-state`
+
+Check a bounded visible screen postcondition without motion
+
+Literal OCR on fresh synchronized frames. timeoutMs > 0 requires two distinct matching frames. HTTP 200 is a completed read, not a matched condition: inspect verification.matched. Bounds should isolate the actual field, excluding suggestions/history. A match is limited to visible evidence, not entire workflow success. No physical retry or account provisioning occurs.
+
+Response statuses: 200, 400, 401, 403, 404, 429, 502, 503. See [remote OpenAPI](/openapi-remote.json) for full request and response schemas.
+
+### GET `/health`
+
+Check authenticated gateway connectivity
+
+
+
+Response statuses: 200, 401, 403, 429, 502, 503. See [remote OpenAPI](/openapi-remote.json) for full request and response schemas.
+
+### GET `/api/v1/devices`
+
+List assigned devices
+
+
+
+Response statuses: 200, 401, 403, 429, 502, 503. See [remote OpenAPI](/openapi-remote.json) for full request and response schemas.
+
+### GET `/api/v1/devices/{deviceId}`
+
+Get one physical device
+
+
+
+Response statuses: 200, 401, 403, 404, 429, 502, 503. See [remote OpenAPI](/openapi-remote.json) for full request and response schemas.
+
+### GET `/api/v1/devices/{deviceId}/screenshot`
+
+Read the latest or an exact recent frame
+
+
+
+Response statuses: 200, 401, 403, 404, 429, 502, 503. See [remote OpenAPI](/openapi-remote.json) for full request and response schemas.
+
+### POST `/api/v1/devices/{deviceId}/actions`
+
+Submit one safe physical primitive
+
+Coordinate actions bind to an exact observed frame. Frames up to 15 seconds old are accepted directly; from 15 to 60 seconds the station compares the observed screen and target region with the current frame and proceeds only if they remain unchanged. Frames older than 60 seconds are rejected. Customer keys cannot perform mechanical Home. Read capabilities first and wait for the final action receipt.
+
+Response statuses: 200, 202, 400, 401, 403, 409, 429, 502, 503. See [remote OpenAPI](/openapi-remote.json) for full request and response schemas.
+
+### GET `/api/v1/devices/{deviceId}/actions`
+
+List recent action receipts for one device
+
+
+
+Response statuses: 200, 401, 403, 404, 429, 502, 503. See [remote OpenAPI](/openapi-remote.json) for full request and response schemas.
+
+### POST `/api/v1/devices/{deviceId}/visual-actions`
+
+Locate and tap one labeled target with station-side OCR
+
+The station reads its latest fresh frame, returns to the phone Home Screen when an open_app target requires it, resolves one bounded app or text target, and submits the calibrated tap from the same fresh target frame. Prefer this endpoint over a screenshot-to-coordinate round trip for visible labels. Customer keys cannot perform mechanical Home. Read capabilities first and wait for the final action receipt.
+
+Response statuses: 200, 202, 400, 401, 403, 409, 429, 502, 503. See [remote OpenAPI](/openapi-remote.json) for full request and response schemas.
+
+### GET `/api/v1/devices/{deviceId}/actions/{receiptId}`
+
+Read final physical action state
+
+
+
+Response statuses: 200, 401, 403, 404, 429, 502, 503. See [remote OpenAPI](/openapi-remote.json) for full request and response schemas.
+
+## Local operator contract
+
+The [local OpenAPI specification](/openapi.json) additionally describes operator calibration routes. These are not available through customer grants. The versioned URL identifies the API family; live responses also include a protocolVersion.
+
+---
+
+# Errors & troubleshooting
+
+Diagnose connection, authorization, and hardware readiness separately.
+
+## HTTP responses
+
+| Status | Meaning | What to check |
+| --- | --- | --- |
+| 200 / 201 / 202 | Request succeeded or was accepted. | For actions, read the receipt to determine completion. |
+| 400 | Invalid request. | JSON shape, required fields, and supported actions. |
+| 401 | Missing, invalid, expired, or revoked key. | The decoded Bearer key and grant status. |
+| 403 | Access denied. | Device assignment, origin, and operator-only routes. |
+| 404 | Resource or route unavailable. | Device ID, receipt ID, and supported remote paths. |
+| 409 | State or safety conflict. | Freshness, calibration, readiness, or action identity. |
+| 429 | Request rate limit reached. | Reduce action submission rate and back off. |
+| 503 / upstream 5xx | Station, frame, or upstream unavailable. | Hardware connection and gateway/control-plane health. |
+
+## Error payloads
+
+```json
+{
+  "ok": false,
+  "error": "This rental lease does not allow access to that resource."
+}
+```
+
+Some control-plane errors also include a machine-readable `code`; gateway errors may contain only `ok` and `error`. Do not assume every error implements Problem Details or has a code. Preserve the status, error text, receipt ID, device ID, and time for diagnosis.
+
+## Common integration issues
+
+- Docs open but console cannot connect: the docs host and station gateway are separate services.
+- curl returns 403 Origin is not allowed: verify the station is running the remote-client compatibility update. Older gateways rejected requests without Origin.
+- No devices: ask the operator to confirm your allocation and physical connection.
+- Screenshot unavailable: no fresh camera frame exists for this device.
+- Tap locked: inspect capabilities.actions.tap.reason; the operator may need to re-home or recalibrate locally.
+- MCP tools absent: the host must launch the stdio process with the correct command, environment, and installed dependencies.
+- MCP connects locally instead of remotely: set PHONEBASE_API_URL, PHONEBASE_API_TOKEN, and PHONEBASE_MCP_ALLOW_REMOTE=1.
+
+A network timeout before an HTTP response is different from a 401 or 403. Check DNS, HTTPS connectivity, and any required VPN or proxy. Do not disable a network connection you depend on. Use bounded retries for reads; reconcile action receipts before retrying a motion. If an edge service returns a non-JSON 403, preserve its sanitized error and request ID; the official Python example sets an explicit client User-Agent.
+
+## Prepare a useful support report
+
+Send the operator the time with timezone, device ID, endpoint, HTTP status, sanitized error, and receipt ID when available. Describe the last successful step. Remove the API key, invitation fragment, and private phone content.
+
+---
+
+# WebSocket video
+
+A bounded camera stream for interactive clients.
+
+## Connection
+
+```text
+wss://your-station.example/api/live/socket
+  ?deviceId=YOUR_DEVICE_ID
+  &flow=latest
+  &window=3
+  &access_token=YOUR_API_KEY
+```
+
+Replace the example host with the gateway from your invitation. The console uses this endpoint internally. Browser Origin must be allowed by the station. Device assignment is checked before the stream opens. Query credentials are part of the current browser WebSocket protocol; redact them from client logs and tracing.
+
+## Frame delivery
+
+Each frame consists of a JSON metadata message followed by a binary image message. Match them in order. Metadata includes sequence, dimensions, capture time, media type, and device context.
+
+```json
+{"type":"frame_ready"}
+```
+
+```json
+{"type":"frame_ack","sequence":123}
+```
+
+Acknowledge the actual decoded sequence. The gateway supports a maximum of three frames in flight and retains the newest unsent frame. Without a window setting, the compatibility mode uses one-frame backpressure.
+
+## Reconnect and re-observe
+
+On close, discard partial metadata/image pairs and obsolete coordinates. Reconnect with bounded backoff, read device capabilities, then wait for a new complete frame. The station periodically revalidates live customer grants.
+
+---
+
+# Set up a station
+
+The operator workflow for bringing physical devices online and preparing them for customers.
+
+## Station requirements
+
+- A Mac with supported PhoneUse runtime dependencies.
+- For each arm: controller USB, stable power, UVC camera, and a phone in the fixture.
+- A stable identity for every controller and camera; do not rely on USB enumeration numbers.
+
+## Install the runtime
+
+```bash
+curl -fsSL --proto '=https' --tlsv1.2 \
+  https://phoneuse.com/install.sh | bash
+phonebase onboard
+phonebase doctor
+```
+
+Open [the local Dashboard](http://127.0.0.1:3020). This localhost address is for the Mac physically connected to the station. Allow the PhoneUse Camera permission when macOS requests it.
+
+## Prepare each physical device
+
+- Check that Connections identifies the correct controller and camera.
+- Inspect and clear the physical workspace, then explicitly confirm mechanical Home.
+- Position the phone and complete phone-model selection and screen recognition.
+- Verify the detected corners. Use manual calibration when the automatic path cannot confidently validate the setup.
+- Check live tap capability and perform a supervised acceptance workflow before assigning the device.
+
+## Expose the customer gateway
+
+Use a fixed HTTPS hostname backed by a named tunnel to localhost:3015. Configure the exact console origin, a private admin token, and PHONEBASE_REMOTE_PUBLIC_URL. Keep local control API :3013 bound to localhost. Customer keys are generated through [customer access](/docs/customer-access).
+
+## Scale hardware identity
+
+Use `config/device-fleet.json` to assign a stable deviceId, controller serial identity, camera identity, driver port, and verified calibration profile to each arm. Ambiguous hardware must remain unassigned. Qualify USB bandwidth, power, camera frame rates, and recovery under the actual number of arms before customer rollout.
+
+---
+
+# Provision customer access
+
+Assign devices, deliver a private invitation, and manage the trial lifecycle from your local Dashboard.
+
+## Assign a customer
+
+- Open the local Dashboard and select Customer access.
+- Enter a company or customer label and select the connected, available devices for that customer.
+- Select Create & copy access code. The short code is copied automatically. One key covers the assigned devices on this station.
+- Send the short code privately, or select Copy invitation link so the customer can open their workspace without pasting a code.
+- Give the customer the [remote quickstart](/docs/quickstart), and verify they can see only their assigned devices.
+
+## Manage lifecycle
+
+Renew access using Renew 1 month. Current v2 links remain unchanged. Revoke the grant to disable further access. Revoked grants cannot be renewed; create a new grant when new credentials are needed. A device with an active grant cannot be allocated to another customer.
+
+Do not renew an expired grant if one of its devices has since been allocated to another customer. The platform rejects this overlapping assignment.
+
+## Current administration boundary
+
+This release manages customer grants on one local station. A company label is not an organization account, and one key shared by a team does not create individual member identities. For multi-station management, enterprise SSO, centralized audit export, or centralized policy, agree a separate implementation and acceptance plan.
+
+Local administrators can export the currently displayed page of activity records from Activity & incidents. This is not a complete account-wide audit export. Events are retained for up to 30 days, subject to a 250,000-event cap; high-volume stations can reach that cap sooner.
+
+---
+
+# Run an enterprise evaluation
+
+Turn a product trial into a repeatable technical acceptance process.
+
+## Agree the trial scope
+
+- Record the assigned devices, phone models, OS versions, station location, trial dates, and named contacts.
+- Choose the customer’s real workflow and the expected outcome for each step.
+- Agree evidence for success: connection reliability, screenshot latency, action completion, observed task success, and recovery behavior.
+- Set customer-specific targets before measurement. This documentation does not assert a generic uptime or latency SLA.
+
+## Exercise the complete lifecycle
+
+| Area | Acceptance exercise |
+| --- | --- |
+| Access isolation | Try an unassigned device and confirm denial without exposing its image or receipts. |
+| Developer setup | A new engineer follows the docs and connects via REST and MCP. |
+| Physical workflow | Run the agreed task, wait for receipts, and verify actual screen outcomes. |
+| Recovery | Test network interruption and station restart in an operator-supervised session. |
+| Access lifecycle | Verify renewal continuity, expiry, revocation, and new-key recovery. |
+| Multi-device operation | Run independent workers on separate assigned devices and measure USB/camera/host capacity. |
+
+## Prepare for fleet purchase
+
+Confirm hardware quantities, tested station capacity, supported phone fixtures, installation ownership, spare-parts handling, software update policy, support coverage, and data-handling responsibilities. Record anything that remains a planned capability instead of treating it as an existing product guarantee.
+
+---
+
+# Plan a public device demo
+
+Separate a safe website trial from a private customer control link.
+
+## Current release and proposed controls
+
+> This is a launch plan, not a claim that public trial sessions are implemented. Do not publish an existing customer invitation as an anonymous demo. Anyone holding that credential can use its assigned device access until expiry or revocation.
+
+| Area | Current behavior | Needed for a public trial |
+| --- | --- | --- |
+| Access | Customer grants include device read and control scopes | Separate viewer and controller permissions, with a fresh short-lived session for each visitor |
+| Sharing | Grant expiry, revocation and device assignment are checked | Visitor admission, one controller per phone, a queue and server-enforced session expiry |
+| Actions | Frame, calibration, reach and hardware command checks | A server-enforced demo action policy plus OS-level app restrictions |
+| Traffic | Action submissions are limited per access principal | Per-visitor and per-device budgets, viewer limits, bot resistance and cost limits |
+| Phone state | A physical phone retains application state | Dedicated demo accounts and verified cleanup between visitors |
+
+## What an unrestricted shared link exposes
+
+- Privacy: visitors can see whatever appears on the phone, including notifications, chat history, contacts and data from logged-in applications. A later visitor can inherit the previous visitor's screen and data.
+- Account abuse: logged-in messaging or social apps may be used for impersonation, spam, account changes or unauthorized posts. Purchases and destructive settings are a risk wherever the phone permits them.
+- Conflicting control: two visitors can change each other's screen between observation and action. A per-command motor lock does not isolate a whole user session.
+- Copied credentials: a URL or access code can be forwarded, scripted or extracted from browser traffic. Origin checks do not replace authorization; authenticated non-browser clients can omit Origin.
+- Availability and cost: automated clients can consume streams, requests, model budget if you provide an agent, and mechanical duty cycles. A shared grant also shares its rate budget.
+- Infrastructure exposure: a freely controlled phone browser may reach services on its Wi-Fi network. Keep a public demo phone on an isolated network with no access to operator dashboards or other private systems.
+
+These are risks of the access being granted, not proof of an exploit in the gateway. Existing hardware checks and blocked customer mechanical Home reduce specific risks; they do not make unrestricted application access safe. See [security responsibilities](/docs/security) and the [OWASP API Security risks](https://api-security.owasp.org/editions/2023/en/0x11-t10/).
+
+## Recommended website experience
+
+Start with a dedicated, cleaned demo phone and a controlled Try PhoneUse entry point. Use an isolated full-screen demo app with fictional data. Keep the existing customer phone and real WhatsApp conversations private. An initial public experience can offer a few bounded demo actions; provide unrestricted API/MCP access only after onboarding to a private assigned trial.
+
+```text
+Public website
+  → server-validated bot check and visitor session
+  → wait queue with clear availability
+  → exclusive, time-limited control of a dedicated demo phone
+  → server-enforced allowed actions and usage budget
+  → revoke control, terminate the session stream and verify cleanup
+  → offer a private API/MCP trial
+```
+
+A public Watch demo stream still needs a clean dedicated phone and a genuinely view-only server path. Do not embed a normal read-and-control customer key in a viewer page. Hiding buttons, a browser countdown, or a model instruction is not a server-side permission boundary.
+
+If Cloudflare Turnstile is used for admission, validate its result on the server; a client-side widget alone does not protect session creation. Follow the [server-side validation guide](https://developers.cloudflare.com/turnstile/get-started/server-side-validation/).
+
+## Before enabling public control
+
+- Remove real customer accounts, private photos, messages, credentials and payment methods. Apply OS-level app restrictions and isolate the phone network.
+- Enforce exclusive ownership across browser, REST, MCP and background agents. Pause the WhatsApp assistant, recorder and operator workflows on the demo device while a visitor owns it.
+- Enforce visitor expiry, action budgets and allowed operations at the gateway. Verify that direct API requests, copied credentials and stale WebSockets cannot bypass these controls.
+- Test two simultaneous visitors, replay of an expired session, reconnection, idle timeout, device disconnection, physical Hold and immediate revocation.
+- Verify reset and data cleanup before admitting the next visitor. If reset or HD Mirror fails, take the device out of the queue rather than assigning a broken trial.
+- Provide an operator kill switch and sanitized logs. Record session ownership, action receipt IDs and failure categories without recording live keys or unrelated private content.
+
+## Roll out and measure
+
+Validate with invited testers first, then admit a small public cohort to the isolated demo. Measure trial starts, queue abandonment, time to first successful action, completion rate, errors and conversion to a private trial. Compare the conversion result with a control group; do not assume public access increases conversion.
+
+Size capacity before advertising a live demo. For example, a proposed two-minute session plus a thirty-second verified reset allows at most 24 sessions per hour per phone before failures or idle gaps. This is a planning calculation, not measured station throughput. Prefer an honest queue or recorded demonstration when capacity is unavailable.
+
+---
+
+# Security & responsibilities
+
+The actual trust boundaries of this release, with clear ownership of physical and digital access.
+
+## Trust boundaries
+
+The public website serves documentation and the console application. Customer browsers and clients connect to the assigned station gateway. The gateway authenticates the key and filters device access; the local control plane validates physical actions. The operator’s Mac and local configuration remain privileged infrastructure.
+
+> Treat a device invitation, short access code and generated MCP configuration as credentials. Current customer grants include viewing and control; browser view-only mode does not create a read-only grant. Do not publish an existing customer's device link. Use the [public demo launch plan](/docs/public-demo) for a separate isolated trial experience.
+
+## Implemented controls
+
+- HTTPS between the MCP bridge or customer client and the gateway; MCP host-to-bridge communication uses local stdio.
+- Opaque short access codes and signed legacy tokens, with server-side grant validity checks.
+- Device-specific REST and WebSocket authorization.
+- Origin checks for browser clients and Bearer authentication for remote requests.
+- Receipt isolation by access grant.
+- Hardware checks for freshness, calibration, reach, touch depth, and controller state.
+
+## Data and operations
+
+Camera frames may contain customer application data. Treat screenshots, recordings, and workflow logs according to your company’s data rules. Receipts and operational state are stored on the station. Review station backups, retention, tunnel configuration, and machine access with the operator.
+
+> No SOC 2, ISO certification, penetration-test attestation, data residency guarantee, or contractual SLA is claimed by these docs. Procurement evidence must be provided and assessed separately.
+
+## Report a concern
+
+Contact the station operator through the private channel used to provision your trial. Include a sanitized description and reproduction steps. Do not include active API keys or phone screenshots containing private data in a public issue.
+
+---
+
+# Release notes
+
+Track customer-visible contract and workflow changes.
+
+## October 26, 2026: Developer onboarding and public demo guidance
+
+- MCP setup now distinguishes the local stdio bridge, station REST gateway, browser video and application-owned agent loop.
+- Added read-only API connection checks, recovery guidance, camera-fallback checks and one-workflow-owner requirements.
+- Documentation and MCP downloads are currently served from https://console.phonefarm.ai. Use the API gateway from your private invitation; older domain notes are historical deployment information.
+- Added a public demo launch plan describing current read-and-control grants and the visitor isolation, expiry, reset and abuse controls needed before anonymous trials. Those proposed controls are not enabled by publishing this guide.
+
+## September 14, 2026: PhoneUse gateway and connection setup
+
+- The hosted customer gateway is https://gateway.phonebase.co. The website and downloads remain on https://phoneuse.com.
+- Current clients migrate recognized legacy invitation URLs to the hosted gateway without changing the customer key. Existing gateway connections remain compatible.
+- The MCP --configure command verifies assigned-device access and writes a private configuration with actual executable and client paths.
+- The console defaults to HD mirror. Operators own physical setup and saved calibration.
+- Domain migration does not provide an uptime or latency guarantee; network reliability remains subject to station and client connectivity.
+
+## Enterprise evaluation update
+
+- Remote-first documentation with separate customer and station-operator paths.
+- Customer access grants can assign multiple devices on one station.
+- Remote REST and MCP clients may authenticate without a browser Origin header.
+- Renewing an expired grant cannot overlap another active customer allocation.
+- Remote OpenAPI includes Bearer authentication and excludes operator-only calibration and Home.
+- Connection helper produces REST and MCP settings from a private invitation.
+- Guides are available as Markdown and machine-readable documentation indexes.
+- Standalone Node.js MCP client download with checksum; remote customers do not need local hardware services.
+
+## Compatibility and rollout
+
+Existing single-device v1 registries and current signed customer keys remain supported. Multi-device assignments write registry version 2, which older runtimes reject rather than silently dropping device restrictions. Deploy the matching gateway and control-plane release together before creating multi-device grants.
+
+> The website and station runtime are deployed separately. These release notes describe the accompanying source update; confirm your station has been updated before using new runtime capabilities.
+
+---
+

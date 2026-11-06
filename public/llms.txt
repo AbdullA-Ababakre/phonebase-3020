@@ -1,0 +1,25 @@
+# PhoneUse
+
+> Physical device control through browser, REST, and MCP. Use customer keys for assigned remote devices.
+
+- [Build on real devices.](https://console.phonefarm.ai/docs/overview.md): Connect to your assigned devices, then choose your interface. Start in the browser, build with the REST API, or connect an AI agent.
+- [Your first connection](https://console.phonefarm.ai/docs/quickstart.md): Go from an invitation to a verified device connection, then choose how you want to build.
+- [Authentication & access](https://console.phonefarm.ai/docs/authentication.md): One invitation connects the browser, REST API, and MCP to the same assigned devices.
+- [Connection helper](https://console.phonefarm.ai/docs/connect.md): Turn a private invitation into the settings for your REST client or MCP host, entirely in this browser tab.
+- [Use the Cloud Console](https://console.phonefarm.ai/docs/console.md): Observe a device, inspect its readiness, and operate it from your browser.
+- [Actions & receipts](https://console.phonefarm.ai/docs/actions.md): Compose reliable workflows from physical primitives with explicit completion states.
+- [Frames & coordinates](https://console.phonefarm.ai/docs/frames.md): A point is meaningful only in the exact image used to choose it.
+- [Retries & concurrency](https://console.phonefarm.ai/docs/reliability.md): Handle uncertainty explicitly when software controls physical hardware.
+- [Connect an MCP agent](https://console.phonefarm.ai/docs/mcp.md): Give your agent physical device tools through a local stdio bridge to your remote station.
+- [MCP tool reference](https://console.phonefarm.ai/docs/mcp-tools.md): Observation, action, and receipt tools exposed by the PhoneUse stdio server.
+- [REST API reference](https://console.phonefarm.ai/docs/api-reference.md): The remote customer contract, generated from the checked-in OpenAPI 3.1.2 specification.
+- [Errors & troubleshooting](https://console.phonefarm.ai/docs/errors.md): Diagnose connection, authorization, and hardware readiness separately.
+- [WebSocket video](https://console.phonefarm.ai/docs/live-video.md): A bounded camera stream for interactive clients.
+- [Set up a station](https://console.phonefarm.ai/docs/station-setup.md): The operator workflow for bringing physical devices online and preparing them for customers.
+- [Provision customer access](https://console.phonefarm.ai/docs/customer-access.md): Assign devices, deliver a private invitation, and manage the trial lifecycle from your local Dashboard.
+- [Run an enterprise evaluation](https://console.phonefarm.ai/docs/enterprise-evaluation.md): Turn a product trial into a repeatable technical acceptance process.
+- [Plan a public device demo](https://console.phonefarm.ai/docs/public-demo.md): Separate a safe website trial from a private customer control link.
+- [Security & responsibilities](https://console.phonefarm.ai/docs/security.md): The actual trust boundaries of this release, with clear ownership of physical and digital access.
+- [Release notes](https://console.phonefarm.ai/docs/changelog.md): Track customer-visible contract and workflow changes.
+
+- [Remote OpenAPI](https://console.phonefarm.ai/openapi-remote.json)
